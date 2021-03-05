@@ -323,7 +323,9 @@ workers:
     ipaddr: "worker_ips[1]"
 EOF
 
-ansible-playbook -e @${WORKSPACE}/helper_vars.env ${my_dir}/tasks/setup_dns.yaml
+pushd ${my_dir}
+ansible-playbook -e @${WORKSPACE}/helper_vars.env ./tasks/setup_dns.yaml
+popd
 
 exit 0
 
