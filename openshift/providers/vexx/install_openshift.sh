@@ -284,16 +284,46 @@ declare -a master_ips worker_ips
 
 for i in {0..2}; do
   server="$INFRA_ID-master-port-${i}"
-  master_ips[${i}]=$(echo "$addrs" | jq --arg server "$server"  '.[] | select(.Name == $server) | .["Fixed IP Addresses"][0]["ip_address"]' )
+  master_ips[${i}]=$(echo "$addrs" | jq -r --arg server "$server"  '.[] | select(.Name == $server) | .["Fixed IP Addresses"][0]["ip_address"]' )
 done
 
 for i in {0..1}; do
   server="$INFRA_ID-worker-port-${i}"
-  worker_ips[${i}]=$(echo "$addrs" | jq --arg server "$server"  '.[] | select(.Name == $server) | .["Fixed IP Addresses"][0]["ip_address"]' )
+  worker_ips[${i}]=$(echo "$addrs" | jq -r --arg server "$server"  '.[] | select(.Name == $server) | .["Fixed IP Addresses"][0]["ip_address"]' )
 done
 
 server="$INFRA_ID-bootstrap-port"
-bootstrap_ip=$(echo "$addrs" | jq --arg server "$server"  '.[] | select(.Name == $server) | .["Fixed IP Addresses"][0]["ip_address"]' )
+bootstrap_ip=$(echo "$addrs" | jq -r --arg server "$server"  '.[] | select(.Name == $server) | .["Fixed IP Addresses"][0]["ip_address"]' )
+
+cat <<EOF >${WORKSPACE}/helper_vars.env
+---
+disk: vda
+helper:
+  name: "helper"
+  ipaddr: "${NODE_IP}"
+dns:
+  domain: "example.com"
+  clusterid: "{KUBERNETES_CLUSTER_NAME}"
+  forwarder1: "8.8.8.8"
+  forwarder2: "8.8.4.4"
+bootstrap:
+  name: "bootstrap"
+  ipaddr: "${bootstrap_ip}"
+masters:
+  - name: "master0"
+    ipaddr: "${master_ips[0]}"
+  - name: "master1"
+    ipaddr: "${master_ips[1]}"
+  - name: "master2"
+    ipaddr: "${master_ips[2]}"
+workers:
+  - name: "worker0"
+    ipaddr: "worker_ips[0]"
+  - name: "worker1"
+    ipaddr: "worker_ips[1]"
+EOF
+
+ansible-playbook -e ${}/helper_vars.env ${my_dir}/tasks/setup_dns.yml
 
 exit 0
 

@@ -1,3 +1,10 @@
+---
+# Setup OCP4 Helper Node
+- hosts: all
+  handlers:
+  - import_tasks: ../handlers/main.yml
+
+  tasks:
   - name: Best effort SELinux repair - DNS
     shell: "restorecon -vR /var/named || true"
 
@@ -37,4 +44,4 @@
       dest: /var/named/reverse.db
       mode: '0644'
     notify:
-          - restart bind
+       - restart bind
