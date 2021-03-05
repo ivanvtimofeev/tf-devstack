@@ -50,6 +50,10 @@
     shell: "/usr/local/bin/set-dns-serial.sh"
     register: dymanicserialnumber
 
+  - name: Setting serial number as a fact
+    set_fact:
+      serialnumber: "{{ dymanicserialnumber.stdout }}"
+
   - name: Write out "{{ dns.domain | lower }}" zone file
     become: yes
     template:
