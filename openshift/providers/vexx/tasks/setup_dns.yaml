@@ -5,7 +5,29 @@
   - import_tasks: ../handlers/main.yml
 
   tasks:
+  - name: Install needed packages
+    become: yes
+    package:
+      name:
+        - "bind"
+        - "bind-utils"
+      state: present
+  - name: Remove existing named config
+    become: yes
+    file:
+      path: /etc/named.conf
+      state: absent
+
+  - name: Remove existing DNS zone files
+    become: yes
+    file:
+      path: "/var/named/{{ item }}"
+      state: absent
+    with_items:
+      - "zonefile.db"
+      - "reverse.db"
   - name: Best effort SELinux repair - DNS
+    become: yes
     shell: "restorecon -vR /var/named || true"
 
   - name: Write out named file
