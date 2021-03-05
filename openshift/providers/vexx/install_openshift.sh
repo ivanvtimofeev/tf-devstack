@@ -318,9 +318,9 @@ masters:
     ipaddr: "${master_ips[2]}"
 workers:
   - name: "worker0"
-    ipaddr: "worker_ips[0]"
+    ipaddr: "${worker_ips[0]}"
   - name: "worker1"
-    ipaddr: "worker_ips[1]"
+    ipaddr: "${worker_ips[1]}"
 EOF
 
 pushd ${my_dir}
