@@ -2,7 +2,7 @@
 # Setup OCP4 Helper Node
 - hosts: all
   handlers:
-  - import_tasks: ../handlers/main.yml
+  - import_tasks: ../handlers/main.yaml
 
   tasks:
   - name: Install needed packages
