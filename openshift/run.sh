@@ -1,5 +1,7 @@
 #!/bin/bash -e
 
+set -x
+
 my_file="$(readlink -e "$0")"
 my_dir="$(dirname $my_file)"
 source "$my_dir/../common/common.sh"
@@ -52,7 +54,9 @@ function machines() {
         exit 1
     fi
 
-    ${my_dir}/providers/${PROVIDER}/destroy_cluster.sh
+    if [[ ${PROVIDER} == "kvm" ]]; then
+         ${my_dir}/providers/${PROVIDER}/destroy_cluster.sh
+    fi
 
     set_ssh_keys
 }
