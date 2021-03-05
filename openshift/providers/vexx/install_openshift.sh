@@ -295,7 +295,7 @@ done
 server="$INFRA_ID-bootstrap-port"
 bootstrap_ip=$(echo "$addrs" | jq -r --arg server "$server"  '.[] | select(.Name == $server) | .["Fixed IP Addresses"][0]["ip_address"]' )
 
-cat <<EOF >${WORKSPACE}/helper_vars.env
+cat <<EOF > ${WORKSPACE}/helper_vars.env
 ---
 disk: vda
 helper:
@@ -323,7 +323,7 @@ workers:
     ipaddr: "worker_ips[1]"
 EOF
 
-ansible-playbook -e ${}/helper_vars.env ${my_dir}/tasks/setup_dns.yml
+ansible-playbook -e @${WORKSPACE}/helper_vars.env ${my_dir}/tasks/setup_dns.yaml
 
 exit 0
 
