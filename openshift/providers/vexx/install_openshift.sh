@@ -302,8 +302,8 @@ helper:
   name: "helper"
   ipaddr: "${NODE_IP}"
 dns:
-  domain: "example.com"
-  clusterid: "{KUBERNETES_CLUSTER_NAME}"
+  domain: "${KUBERNETES_CLUSTER_DOMAIN}"
+  clusterid: "${KUBERNETES_CLUSTER_NAME}"
   forwarder1: "8.8.8.8"
   forwarder2: "8.8.4.4"
 bootstrap:
