@@ -16,7 +16,7 @@ export VEXX_ROUTER=${VEXX_ROUTER:-"router1"}
 
 sudo yum install -y python3 epel-release
 sudo yum install -y jq
-sudo pip3 install "cryptography<3.3.2"  python-openstackclient ansible yq
+sudo pip3 install "cryptography<3.3.2"  python-openstackclient ansible yq jinja2
 
 mkdir -p ${WORKSPACE}/tmpopenshift
 pushd ${WORKSPACE}/tmpopenshift
