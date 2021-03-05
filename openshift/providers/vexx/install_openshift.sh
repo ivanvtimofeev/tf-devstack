@@ -3,18 +3,23 @@
 my_file=$(realpath "$0")
 my_dir="$(dirname $my_file)"
 
-OPENSHIFT_API_FIP=${OPENSHIFT_API_FIP:-"38.108.68.139"}
-OPENSHIFT_INGRESS_FIP=${OPENSHIFT_INGRESS_FIP:-"38.108.68.90"}
-OPENSHIFT_INSTALL_DIR=${OPENSHIFT_INSTALL_DIR:-"os-install-config"}
+echo "Workspace is $WORKSPACE"
+
+OPENSHIFT_INSTALL_DIR=${OPENSHIFT_INSTALL_DIR:-"${WORKSPACE}/os-install-config"}
 OS_IMAGE_PUBLIC_SERVICE=${OS_IMAGE_PUBLIC_SERVICE:="https://image.public.sjc1.vexxhost.net/"}
 OPENSHIFT_VERSION="4.5.21"
 
+export VEXX_NETWORK=${VEXX_NETWORK:-"management"}
+export VEXX_SUBNET=${VEXX_SUBNET:-"management"}
+export VEXX_GATEWAY=${VEXX_GATEWAY:-"10.0.0.1"}
+export VEXX_ROUTER=${VEXX_ROUTER:-"router1"}
+
 sudo yum install -y python3 epel-release
 sudo yum install -y jq
-sudo pip3 install python-openstackclient ansible yq
+sudo pip3 install "cryptography<3.3.2"  python-openstackclient ansible yq
 
-mkdir -p ./tmpopenshift
-pushd tmpopenshift
+mkdir -p ${WORKSPACE}/tmpopenshift
+pushd ${WORKSPACE}/tmpopenshift
 if ! command -v openshift-install; then
   curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OPENSHIFT_VERSION}/openshift-install-linux-${OPENSHIFT_VERSION}.tar.gz
   tar xzf openshift-install-linux-${OPENSHIFT_VERSION}.tar.gz
@@ -26,17 +31,14 @@ if ! command -v oc || ! command -v kubectl; then
   sudo mv ./oc ./kubectl /usr/local/bin
 fi
 popd
-rm -rf tmpopenshift
+rm -rf ${WORKSPACE}/tmpopenshift
 
 if [[ -z ${OPENSHIFT_PULL_SECRET} ]]; then
   echo "ERROR: set OPENSHIFT_PULL_SECRET env variable"
   exit 1
 fi
 
-if [[ -z ${OPENSHIFT_PUB_KEY} ]]; then
-  echo "ERROR: set OPENSHIFT_PUB_KEY env variable"
-  exit 1
-fi
+export OPENSHIFT_PUB_KEY="$(cat ~/.ssh/id_rsa.pub)"
 
 rm -rf $OPENSHIFT_INSTALL_DIR
 mkdir -p $OPENSHIFT_INSTALL_DIR
@@ -77,7 +79,11 @@ openshift-install --dir $OPENSHIFT_INSTALL_DIR create manifests
 
 rm -f ${OPENSHIFT_INSTALL_DIR}/openshift/99_openshift-cluster-api_master-machines-*.yaml ${OPENSHIFT_INSTALL_DIR}/openshift/99_openshift-cluster-api_worker-machineset-*.yaml
 
-${OPENSHIFT_REPO}/scripts/apply_install_manifests.sh $OPENSHIFT_INSTALL_DIR
+if [[ ! -d $WORKSPACE/tf-openshift ]]; then
+  git clone https://github.com/tungstenfabric/tf-openshift.git $WORKSPACE/tf-openshift
+fi
+
+$WORKSPACE/tf-openshift/scripts/apply_install_manifests.sh $OPENSHIFT_INSTALL_DIR
 
 openshift-install --dir $OPENSHIFT_INSTALL_DIR  create ignition-configs
 
@@ -129,6 +135,168 @@ with open('${OPENSHIFT_INSTALL_DIR}/bootstrap.ign', 'w') as f:
     json.dump(ignition, f)
 EOF
 
+cat <<EOF > $OPENSHIFT_INSTALL_DIR/common.yaml
+- hosts: localhost
+  gather_facts: no
+
+  vars_files:
+  - metadata.json
+
+  tasks:
+  - name: 'Compute resource names'
+    set_fact:
+      cluster_id_tag: "openshiftClusterID={{ infraID }}"
+      os_network: "${VEXX_NETWORK}"
+      os_subnet: "${VEXX_SUBNET}-nodes"
+      os_router: "${VEXX_ROUTER}-external-router"
+      # Port names
+ #     os_port_api: "{{ infraID }}-api-port"
+ #     os_port_ingress: "{{ infraID }}-ingress-port"
+      os_port_bootstrap: "{{ infraID }}-bootstrap-port"
+      os_port_master: "{{ infraID }}-master-port"
+      os_port_worker: "{{ infraID }}-worker-port"
+      # Security groups names
+      os_sg_master: "allow_all"
+      os_sg_worker: "allow_all"
+      # Server names
+ #     os_api_lb_server_name: "{{ infraID }}-api-lb"
+ #     os_ing_lb_server_name: "${INFRA_ID}-ing-lb"
+      os_bootstrap_server_name: "{{ infraID }}-bootstrap"
+      os_cp_server_name: "{{ infraID }}-master"
+      os_cp_server_group_name: "{{ infraID }}-master"
+      os_compute_server_name: "{{ infraID }}-worker"
+
+      # Ignition files
+      os_bootstrap_ignition: "{{ infraID }}-bootstrap-ignition.json"
+EOF
+
+cat <<EOF > $OPENSHIFT_INSTALL_DIR/inventory.yaml
+all:
+  hosts:
+    localhost:
+      ansible_connection: local
+      ansible_python_interpreter: "{{ansible_playbook_python}}"
+
+      # User-provided values
+      os_subnet_range: '10.0.0.0/16'
+      os_flavor_master: 'v2-standard-16'
+      os_flavor_worker: 'v2-highcpu-16'
+      os_image_rhcos: 'rhcos'
+      os_external_network: 'public'
+      # OpenShift API floating IP address
+      os_api_fip: '${OPENSHIFT_API_FIP}'
+      # OpenShift Ingress floating IP address
+      os_ingress_fip: '${OPENSHIFT_INGRESS_FIP}'
+      # Service subnet cidr
+      svc_subnet_range: '172.30.0.0/16'
+      os_svc_network_range: '172.30.0.0/15'
+      # Subnet pool prefixes
+      cluster_network_cidrs: '10.128.0.0/14'
+      # Subnet pool prefix length
+      host_prefix: '23'
+      # Name of the SDN.
+      os_networking_type: 'Contrail'
+
+      # Number of provisioned Control Plane nodes
+      # 3 is the minimum number for a fully-functional cluster.
+      os_cp_nodes_number: 3
+
+      # Number of provisioned Compute nodes.
+      # 3 is the minimum number for a fully-functional cluster.
+      os_compute_nodes_number: 2
+EOF
+
+
+cat <<EOF > $OPENSHIFT_INSTALL_DIR/ports.yaml
+# Required Python packages:
+#
+# ansible
+# openstackclient
+# openstacksdk
+# netaddr
+
+- import_playbook: common.yaml
+
+- hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: 'Create the bootstrap server port'
+    os_port:
+      name: "{{ os_port_bootstrap }}"
+      network: "{{ os_network }}"
+      security_groups:
+      - "{{ os_sg_master }}"
+
+  - name: 'Set bootstrap port tag'
+    command:
+      cmd: "openstack port set --tag {{ cluster_id_tag }} {{ os_port_bootstrap }}"
+
+  - name: 'Disable bootstrap port security'
+    command:
+      cmd: "openstack port set --no-security-group --disable-port-security {{ os_port_bootstrap }}"
+
+  - name: 'Create the Control Plane ports'
+    os_port:
+      name: "{{ item.1 }}-{{ item.0 }}"
+      network: "{{ os_network }}"
+      security_groups:
+      - "{{ os_sg_master }}"
+    with_indexed_items: "{{ [os_port_master] * os_cp_nodes_number }}"
+    register: ports
+
+  - name: 'Set Control Plane ports tag'
+    command:
+      cmd: "openstack port set --tag {{ cluster_id_tag }} {{ item.1 }}-{{ item.0 }}"
+    with_indexed_items: "{{ [os_port_master] * os_cp_nodes_number }}"
+
+  - name: 'Disable control plane port security'
+    command:
+      cmd: "openstack port set --no-security-group --disable-port-security {{ item.1 }}-{{ item.0 }}"
+    with_indexed_items: "{{ [os_port_master] * os_cp_nodes_number }}"
+
+  - name: 'Create the Compute ports'
+    os_port:
+      name: "{{ item.1 }}-{{ item.0 }}"
+      network: "{{ os_network }}"
+      security_groups:
+      - "{{ os_sg_worker }}"
+    with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
+    register: ports
+
+  - name: 'Set compute ports tag'
+    command:
+      cmd: "openstack port set --tag {{ cluster_id_tag }} {{ item.1 }}-{{ item.0 }}"
+    with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
+
+  - name: 'Disable compute port security'
+    command:
+      cmd: "openstack port set --no-security-group --disable-port-security {{ item.1 }}-{{ item.0 }}"
+    with_indexed_items: "{{ [os_port_master] * os_compute_nodes_number}}"
+
+EOF
+
+ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/ports.yaml
+
+addrs=$(openstack port list -c name -c fixed_ips -f json --tags openshiftClusterID=${INFRA_ID})
+
+declare -a master_ips worker_ips
+
+for i in {0..2}; do
+  server="$INFRA_ID-master-port-${i}"
+  master_ips[${i}]=$(echo "$addrs" | jq --arg server "$server"  '.[] | select(.Name == $server) | .["Fixed IP Addresses"][0]["ip_address"]' )
+done
+
+for i in {0..1}; do
+  server="$INFRA_ID-worker-port-${i}"
+  worker_ips[${i}]=$(echo "$addrs" | jq --arg server "$server"  '.[] | select(.Name == $server) | .["Fixed IP Addresses"][0]["ip_address"]' )
+done
+
+server="$INFRA_ID-bootstrap-port"
+bootstrap_ip=$(echo "$addrs" | jq --arg server "$server"  '.[] | select(.Name == $server) | .["Fixed IP Addresses"][0]["ip_address"]' )
+
+exit 0
+
 openstack image create --disk-format=raw --container-format=bare --file ${OPENSHIFT_INSTALL_DIR}/bootstrap.ign bootstrap-ignition-image-$INFRA_ID
 uri=$(openstack image show bootstrap-ignition-image-$INFRA_ID | grep -oh "/v2/images/.*/file")
 storage_url=${OS_IMAGE_PUBLIC_SERVICE}${uri}
@@ -175,216 +343,6 @@ ignition['storage']['files'] = files;
 json.dump(ignition, sys.stdout)" <$OPENSHIFT_INSTALL_DIR/master.ign > "$OPENSHIFT_INSTALL_DIR/$INFRA_ID-master-$index-ignition.json"
 done
 
-cat <<EOF > $OPENSHIFT_INSTALL_DIR/common.yaml
-- hosts: localhost
-  gather_facts: no
-
-  vars_files:
-  - metadata.json
-
-  tasks:
-  - name: 'Compute resource names'
-    set_fact:
-      cluster_id_tag: "openshiftClusterID={{ infraID }}"
-      os_network: "{{ infraID }}-network"
-      os_subnet: "{{ infraID }}-nodes"
-      os_router: "{{ infraID }}-external-router"
-      # Port names
-      master_addresses:
-      - "10.100.0.50"
-      - "10.100.0.51"
-      - "10.100.0.52"
-      worker_addresses:
-      - "10.100.0.60"
-      - "10.100.0.61"
-      - "10.100.0.62"
-      bootstrap_address: "10.100.0.53"
-      os_port_api: "{{ infraID }}-api-port"
-      os_port_ingress: "{{ infraID }}-ingress-port"
-      os_port_bootstrap: "{{ infraID }}-bootstrap-port"
-      os_port_master: "{{ infraID }}-master-port"
-      os_port_worker: "{{ infraID }}-worker-port"
-      # Security groups names
-      os_sg_master: "allow_all"
-      os_sg_worker: "allow_all"
-      # Server names
-      os_api_lb_server_name: "{{ infraID }}-api-lb"
-      os_ing_lb_server_name: "${INFRA_ID}-ing-lb"
-      os_bootstrap_server_name: "{{ infraID }}-bootstrap"
-      os_cp_server_name: "{{ infraID }}-master"
-      os_cp_server_group_name: "{{ infraID }}-master"
-      os_compute_server_name: "{{ infraID }}-worker"
-      # Trunk names
-      os_cp_trunk_name: "{{ infraID }}-master-trunk"
-      os_compute_trunk_name: "{{ infraID }}-worker-trunk"
-      # Subnet pool name
-      subnet_pool: "{{ infraID }}-kuryr-pod-subnetpool"
-      # Service network name
-      os_svc_network: "{{ infraID }}-kuryr-service-network"
-      # Service subnet name
-      os_svc_subnet: "{{ infraID }}-kuryr-service-subnet"
-      # Ignition files
-      os_bootstrap_ignition: "{{ infraID }}-bootstrap-ignition.json"
-EOF
-
-cat <<EOF > $OPENSHIFT_INSTALL_DIR/inventory.yaml
-all:
-  hosts:
-    localhost:
-      ansible_connection: local
-      ansible_python_interpreter: "{{ansible_playbook_python}}"
-
-      # User-provided values
-      os_subnet_range: '10.100.0.0/24'
-      os_flavor_master: 'v2-standard-16'
-      os_flavor_worker: 'v2-highcpu-16'
-      os_image_rhcos: 'rhcos'
-      os_external_network: 'public'
-      # OpenShift API floating IP address
-      os_api_fip: '${OPENSHIFT_API_FIP}'
-      # OpenShift Ingress floating IP address
-      os_ingress_fip: '${OPENSHIFT_INGRESS_FIP}'
-      # Service subnet cidr
-      svc_subnet_range: '172.30.0.0/16'
-      os_svc_network_range: '172.30.0.0/15'
-      # Subnet pool prefixes
-      cluster_network_cidrs: '10.128.0.0/14'
-      # Subnet pool prefix length
-      host_prefix: '23'
-      # Name of the SDN.
-      # Possible values are OpenshiftSDN or Kuryr.
-      os_networking_type: 'OpenshiftSDN'
-
-      # Number of provisioned Control Plane nodes
-      # 3 is the minimum number for a fully-functional cluster.
-      os_cp_nodes_number: 3
-
-      # Number of provisioned Compute nodes.
-      # 3 is the minimum number for a fully-functional cluster.
-      os_compute_nodes_number: 3
-EOF
-
-cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
-# Required Python packages:
-#
-# ansible
-# openstackclient
-# openstacksdk
-# netaddr
-
-- import_playbook: common.yaml
-
-- hosts: all
-  gather_facts: no
-
-  tasks:
-  - name: 'Create the cluster network'
-    os_network:
-      name: "{{ os_network }}"
-
-  - name: 'Set the cluster network tag'
-    command:
-      cmd: "openstack network set --tag {{ cluster_id_tag }} {{ os_network }}"
-
-  - name: 'Create a subnet'
-    os_subnet:
-      name: "{{ os_subnet }}"
-      network_name: "{{ os_network }}"
-      cidr: "{{ os_subnet_range }}"
-      allocation_pool_start: "{{ os_subnet_range | next_nth_usable(10) }}"
-      allocation_pool_end: "{{ os_subnet_range | ipaddr('last_usable') }}"
-
-  - name: 'Set the cluster subnet tag'
-    command:
-      cmd: "openstack subnet set --tag {{ cluster_id_tag }} {{ os_subnet }}"
-
-  - name: 'Create external router'
-    os_router:
-      name: "{{ os_router }}"
-      network: "{{ os_external_network }}"
-      interfaces:
-      - "{{ os_subnet }}"
-
-EOF
-
-ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/network.yaml
-
-cat <<EOF > $OPENSHIFT_INSTALL_DIR/ports.yaml
-# Required Python packages:
-#
-# ansible
-# openstackclient
-# openstacksdk
-# netaddr
-
-- import_playbook: common.yaml
-
-- hosts: all
-  gather_facts: no
-
-  tasks:
-  - name: 'Create the bootstrap server port'
-    os_port:
-      name: "{{ os_port_bootstrap }}"
-      network: "{{ os_network }}"
-      security_groups:
-      - "{{ os_sg_master }}"
-      fixed_ips:
-        - ip_address: "{{ bootstrap_address }}"
-
-  - name: 'Set bootstrap port tag'
-    command:
-      cmd: "openstack port set --tag {{ cluster_id_tag }} {{ os_port_bootstrap }}"
-
-  - name: 'Disable bootstrap port security'
-    command:
-      cmd: "openstack port set --no-security-group --disable-port-security ${os_port_bootstrap}"
-
-  - name: 'Create the Control Plane ports'
-    os_port:
-      name: "{{ item.1 }}-{{ item.0 }}"
-      network: "{{ os_network }}"
-      security_groups:
-      - "{{ os_sg_master }}"
-      fixed_ips:
-      - ip_address: "{{ master_addresses[item.0] }}"
-    with_indexed_items: "{{ [os_port_master] * os_cp_nodes_number }}"
-    register: ports
-
-  - name: 'Set Control Plane ports tag'
-    command:
-      cmd: "openstack port set --tag {{ cluster_id_tag }} {{ item.1 }}-{{ item.0 }}"
-    with_indexed_items: "{{ [os_port_master] * os_cp_nodes_number }}"
-
-  - name: 'Disable bootstcontrol plane port security'
-    command:
-      cmd: "openstack port set --no-security-group --disable-port-security {{ item.1 }}-{{ item.0 }}"
-    with_indexed_items: "{{ [os_port_master] * os_cp_nodes_number }}"
-
-  - name: 'Create the Compute ports'
-    os_port:
-      name: "{{ item.1 }}-{{ item.0 }}"
-      network: "{{ os_network }}"
-      security_groups:
-      - "{{ os_sg_worker }}"
-      fixed_ips:
-      - ip_address: "{{ worker_addresses[item.0] }}"
-    with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
-    register: ports
-
-  - name: 'Set Compute ports tag'
-    command:
-      cmd: "openstack port set --tag {{ cluster_id_tag }} {{ item.1 }}-{{ item.0 }}"
-    with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
-
-  - name: 'Disable compute port security'
-    command:
-      cmd: "openstack port set --no-security-group --disable-port-security {{ item.1 }}-{{ item.0 }}"
-    with_indexed_items: "{{ [os_port_master] * os_compute_nodes_number}}"
-
-EOF
-
-ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/ports.yaml
 # SETUP LOAD BALANCERS
 cat  <<EOM > ${OPENSHIFT_INSTALL_DIR}/user-data-api.sh
 #!/bin/bash
