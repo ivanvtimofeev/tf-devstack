@@ -335,24 +335,19 @@ ansible-playbook --become -e @${WORKSPACE}/helper_vars.env ./tasks/setup_httpd.y
 ansible-playbook --become -e @${WORKSPACE}/helper_vars.env ./tasks/setup_haproxy.yaml
 popd
 
-exit 0
+sudo cp ${OPENSHIFT_INSTALL_DIR}/bootstrap.ign /var/www/html/ignition/
+sudo chmod 644 /var/www/html/ignition/bootstrap.ign
 
-openstack image create --disk-format=raw --container-format=bare --file ${OPENSHIFT_INSTALL_DIR}/bootstrap.ign bootstrap-ignition-image-$INFRA_ID
-uri=$(openstack image show bootstrap-ignition-image-$INFRA_ID | grep -oh "/v2/images/.*/file")
-storage_url=${OS_IMAGE_PUBLIC_SERVICE}${uri}
-token=$(openstack token issue -c id -f value)
+bootstrap_ignition_url="http://${NODE_IP}/ignition/bootstrap.ign"
+
 ca_sert=$(cat ${OPENSHIFT_INSTALL_DIR}/auth/kubeconfig | yq -r '.clusters[0].cluster["certificate-authority-data"]')
 cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
 {
   "ignition": {
     "config": {
       "append": [{
-        "source": "${storage_url}",
+        "source": "${bootstrap_ignition_url}",
         "verification": {},
-        "httpHeaders": [{
-          "name": "X-Auth-Token",
-          "value": "${token}"
-        }]
       }]
     },
     "security": {
@@ -373,6 +368,8 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
 }
 EOF
 
+exit 0
+
 for index in $(seq 0 2); do
     MASTER_HOSTNAME="$INFRA_ID-master-$index\n"
     python3 -c "import base64, json, sys;
@@ -383,84 +380,6 @@ ignition['storage']['files'] = files;
 json.dump(ignition, sys.stdout)" <$OPENSHIFT_INSTALL_DIR/master.ign > "$OPENSHIFT_INSTALL_DIR/$INFRA_ID-master-$index-ignition.json"
 done
 
-# SETUP LOAD BALANCERS
-cat  <<EOM > ${OPENSHIFT_INSTALL_DIR}/user-data-api.sh
-#!/bin/bash
-
-sudo apt update -y
-sudo apt install nginx-full -y
-
-cat <<EOF > lb.conf
-stream {
-    server {
-        listen 6443;
-        proxy_pass kube_api_backend;
-    }
-    upstream kube_api_backend {
-      server 10.100.0.50:6443;
-      server 10.100.0.51:6443;
-      server 10.100.0.52:6443;
-      server 10.100.0.53:6443;
-    }
-
-     server {
-        listen 22623;
-        proxy_pass machineconfig_backend;
-    }
-    upstream machineconfig_backend {
-      server 10.100.0.50:22623;
-      server 10.100.0.51:22623;
-      server 10.100.0.52:22623;
-      server 10.100.0.53:22623;
-    }
-}
-EOF
-
-sudo mv lb.conf /etc/nginx/modules-enabled
-sudo systemctl restart nginx
-
-EOM
-
-openstack server create --security-group allow_all --network ${INFRA_ID}-network --image 338b5153-a173-4d35-abfd-c0aa9eaec1d7 --flavor v2-highcpu-2  --user-data ${OPENSHIFT_INSTALL_DIR}/user-data-api.sh ${INFRA_ID}-api-lb --key itimofeev --boot-from-volume 10
-openstack server add floating ip ${INFRA_ID}-api-lb ${OPENSHIFT_API_FIP}
-
-cat  <<EOM > ${OPENSHIFT_INSTALL_DIR}/user-data-ing.sh
-#!/bin/bash
-
-sudo apt update -y
-sudo apt install nginx-full -y
-
-cat <<EOF > lb.conf
-stream {
-    server {
-        listen 80;
-        proxy_pass ing_http_backend;
-    }
-    upstream ing_http_backend {
-      server 10.100.0.60:80;
-      server 10.100.0.61:80;
-      server 10.100.0.62:80;
-    }
-
-    server {
-        listen 443;
-        proxy_pass ing_https_backend;
-    }
-    upstream ing_https_backend {
-      server 10.100.0.60:443;
-      server 10.100.0.61:443;
-      server 10.100.0.62:443;
-    }
-}
-EOF
-
-sudo mv lb.conf /etc/nginx/modules-enabled
-sudo systemctl restart nginx
-
-EOM
-
-openstack server create --security-group allow_all --network ${INFRA_ID}-network --image 338b5153-a173-4d35-abfd-c0aa9eaec1d7 --flavor v2-highcpu-2  --user-data ${OPENSHIFT_INSTALL_DIR}/user-data-ing.sh ${INFRA_ID}-ing-lb --key itimofeev --boot-from-volume 10
-openstack server add floating ip ${INFRA_ID}-ing-lb ${OPENSHIFT_INGRESS_FIP}
 
 cat <<EOF > $OPENSHIFT_INSTALL_DIR/servers.yaml
 # Required Python packages:
