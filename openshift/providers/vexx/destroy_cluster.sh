@@ -25,27 +25,12 @@ fi
 
 
 if [[ -f $OPENSHIFT_INSTALL_DIR/ports.yaml ]]; then
-    cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy_bootstrap.yaml
+    cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy_ports.yaml
 - import_playbook: common.yaml
 - hosts: all
   gather_facts: no
 
   tasks:
-  - name: 'Remove the bootstrap server'
-    os_server:
-      name: "{{ os_bootstrap_server_name }}"
-      state: absent
-      delete_fip: yes
-  - name: 'Remove kube api LB'
-    os_server:
-      name: "{{ os_api_lb_server_name }}"
-      state: absent
-      delete_fip: no
-  - name: 'Remove ingress LB'
-    os_server:
-      name: "{{ os_ing_lb_server_name }}"
-      state: absent
-      delete_fip: no
   - name: 'Remove the bootstrap server port'
     os_port:
       name: "{{ os_port_bootstrap }}"
