@@ -23,6 +23,49 @@ if [[ ! -f $OPENSHIFT_INSTALL_DIR/inventory.yaml || ! -f $OPENSHIFT_INSTALL_DIR/
   exit 0
 fi
 
+
+if [[ -f $OPENSHIFT_INSTALL_DIR/ports.yaml ]]; then
+    cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy_bootstrap.yaml
+- import_playbook: common.yaml
+- hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: 'Remove the bootstrap server'
+    os_server:
+      name: "{{ os_bootstrap_server_name }}"
+      state: absent
+      delete_fip: yes
+  - name: 'Remove kube api LB'
+    os_server:
+      name: "{{ os_api_lb_server_name }}"
+      state: absent
+      delete_fip: no
+  - name: 'Remove ingress LB'
+    os_server:
+      name: "{{ os_ing_lb_server_name }}"
+      state: absent
+      delete_fip: no
+  - name: 'Remove the bootstrap server port'
+    os_port:
+      name: "{{ os_port_bootstrap }}"
+      state: absent
+  - name: 'Delete the Control Plane ports'
+    os_port:
+      name: "{{ item.1 }}-{{ item.0 }}"
+      state: absent
+    with_indexed_items: "{{ [os_port_master] * os_cp_nodes_number }}"
+  - name: 'Delete Compute ports'
+    os_port:
+      name: "{{ item.1 }}-{{ item.0 }}"
+      state: absent
+    with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
+EOF
+    ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/destroy_bootstrap.yaml
+fi
+
+exit 0
+
 openstack image delete bootstrap-ignition-image-$INFRA_ID || /bin/true
 
 if [[ -f ${OPENSHIFT_INSTALL_DIR}/compute-nodes.yaml ]]; then
@@ -76,46 +119,6 @@ if [[ -f ${OPENSHIFT_INSTALL_DIR}/servers.yaml ]]; then
     when: server_group_for_delete.stdout_lines | bool
 EOF
     ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/destroy-control-plane.yaml
-fi
-
-if [[ -f $OPENSHIFT_INSTALL_DIR/ports.yaml ]]; then
-    cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy_bootstrap.yaml
-- import_playbook: common.yaml
-- hosts: all
-  gather_facts: no
-
-  tasks:
-  - name: 'Remove the bootstrap server'
-    os_server:
-      name: "{{ os_bootstrap_server_name }}"
-      state: absent
-      delete_fip: yes
-  - name: 'Remove kube api LB'
-    os_server:
-      name: "{{ os_api_lb_server_name }}"
-      state: absent
-      delete_fip: no
-  - name: 'Remove ingress LB'
-    os_server:
-      name: "{{ os_ing_lb_server_name }}"
-      state: absent
-      delete_fip: no
-  - name: 'Remove the bootstrap server port'
-    os_port:
-      name: "{{ os_port_bootstrap }}"
-      state: absent
-  - name: 'Delete the Control Plane ports'
-    os_port:
-      name: "{{ item.1 }}-{{ item.0 }}"
-      state: absent
-    with_indexed_items: "{{ [os_port_master] * os_cp_nodes_number }}"
-  - name: 'Delete Compute ports'
-    os_port:
-      name: "{{ item.1 }}-{{ item.0 }}"
-      state: absent
-    with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
-EOF
-    ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/destroy_bootstrap.yaml
 fi
 
 if [[ -f $OPENSHIFT_INSTALL_DIR/network.yaml ]]; then
