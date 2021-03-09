@@ -19,6 +19,7 @@
       state: absent
 
   - name: Remove existing DNS zone files
+    become: yes
     file:
       path: "/var/named/{{ item }}"
       state: absent
@@ -29,6 +30,7 @@
     shell: "restorecon -vR /var/named || true"
 
   - name: Write out named file
+    become: yes
     template:
       src: ../templates/named.conf.j2
       dest: /etc/named.conf
@@ -36,6 +38,7 @@
       - restart bind
 
   - name: Installing DNS Serialnumber generator
+    become: yes
     copy:
       src: ../files/set-dns-serial.sh
       dest: /usr/local/bin/set-dns-serial.sh
@@ -50,6 +53,7 @@
       serialnumber: "{{ dymanicserialnumber.stdout }}"
 
   - name: Write out "{{ dns.domain | lower }}" zone file
+    become: yes
     template:
       src: ../templates/zonefile.j2
       dest: /var/named/zonefile.db
@@ -58,6 +62,7 @@
       - restart bind
 
   - name: Write out reverse zone file
+    become: yes
     template:
       src: ../templates/reverse.j2
       dest: /var/named/reverse.db
