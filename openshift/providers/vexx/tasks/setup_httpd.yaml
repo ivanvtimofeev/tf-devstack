@@ -1,0 +1,34 @@
+---
+# Setup OCP4 Helper DNS
+- hosts: all
+  handlers:
+  - import_tasks: ../handlers/main.yaml
+  remote_user: root
+  tasks:
+  - name: Install needed packages
+    package:
+      name:
+        - "httpd"
+      state: present
+  - name: Copy httpd conf file
+    copy:
+      src: ../files/httpd.conf
+      dest: /etc/httpd/conf/httpd.conf
+    notify:
+      - restart httpd
+
+  - name: rCreate apache directories for install packages
+    file:
+      state: "{{ item }}"
+      path: "/var/www/html/install"
+    with_items:
+      - absent
+      - directory
+
+  - name: rCreate apache directories for ignition
+    file:
+      state: "{{ item }}"
+      path: "/var/www/html/ignition"
+    with_items:
+      - absent
+      - directory
