@@ -338,7 +338,7 @@ popd
 sudo cp ${OPENSHIFT_INSTALL_DIR}/bootstrap.ign /var/www/html/ignition/
 sudo chmod 644 /var/www/html/ignition/bootstrap.ign
 
-bootstrap_ignition_url="http://${NODE_IP}/ignition/bootstrap.ign"
+bootstrap_ignition_url="http://${NODE_IP}:8080/ignition/bootstrap.ign"
 default_gate=$(ip r | awk '/default/{print $3}')
 default_dns=${NODE_IP}
 ca_sert=$(cat ${OPENSHIFT_INSTALL_DIR}/auth/kubeconfig | yq -r '.clusters[0].cluster["certificate-authority-data"]')
