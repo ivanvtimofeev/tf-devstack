@@ -14,6 +14,7 @@
         - "bind-utils"
       state: present
   - name: Remove existing named config
+    become: yes
     file:
       path: /etc/named.conf
       state: absent
