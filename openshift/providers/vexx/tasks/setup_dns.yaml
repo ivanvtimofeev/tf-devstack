@@ -46,6 +46,7 @@
       mode: '0555'
 
   - name: Set zone serial number
+    become: yes
     shell: "/usr/local/bin/set-dns-serial.sh"
     register: dymanicserialnumber
 
