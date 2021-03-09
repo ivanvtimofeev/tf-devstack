@@ -6,7 +6,12 @@ my_dir="$(dirname $my_file)"
 source ${my_dir}/functions
 
 echo "Workspace is $WORKSPACE"
-OPENSHIFT_INSTALL_DIR=${INSTALL_DIR:-"${WORKSPACE}/os-install-config"}
+
+export KUBERNETES_CLUSTER_NAME=${KUBERNETES_CLUSTER_NAME:-"test1"}
+export KUBERNETES_CLUSTER_DOMAIN=${KUBERNETES_CLUSTER_DOMAIN:-"example.com"}
+export INSTALL_DIR=${INSTALL_DIR:-"${WORKSPACE}/install-${KUBERNETES_CLUSTER_NAME}"}
+
+OPENSHIFT_INSTALL_DIR=${INSTALL_DIR}
 OS_IMAGE_PUBLIC_SERVICE=${OS_IMAGE_PUBLIC_SERVICE:="https://image.public.sjc1.vexxhost.net/"}
 OPENSHIFT_VERSION="4.5.21"
 
