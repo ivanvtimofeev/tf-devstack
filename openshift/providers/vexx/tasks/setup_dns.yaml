@@ -5,7 +5,6 @@
   - import_tasks: ../handlers/main.yaml
   remote_user: root
 
-
   tasks:
   - name: Install needed packages
     package:
@@ -14,13 +13,11 @@
         - "bind-utils"
       state: present
   - name: Remove existing named config
-    become: yes
     file:
       path: /etc/named.conf
       state: absent
 
   - name: Remove existing DNS zone files
-    become: yes
     file:
       path: "/var/named/{{ item }}"
       state: absent
@@ -31,7 +28,6 @@
     shell: "restorecon -vR /var/named || true"
 
   - name: Write out named file
-    become: yes
     template:
       src: ../templates/named.conf.j2
       dest: /etc/named.conf
@@ -39,14 +35,12 @@
       - restart bind
 
   - name: Installing DNS Serialnumber generator
-    become: yes
     copy:
       src: ../files/set-dns-serial.sh
       dest: /usr/local/bin/set-dns-serial.sh
       mode: '0555'
 
   - name: Set zone serial number
-    become: yes
     shell: "/usr/local/bin/set-dns-serial.sh"
     register: dymanicserialnumber
 
@@ -55,7 +49,6 @@
       serialnumber: "{{ dymanicserialnumber.stdout }}"
 
   - name: Write out "{{ dns.domain | lower }}" zone file
-    become: yes
     template:
       src: ../templates/zonefile.j2
       dest: /var/named/zonefile.db
@@ -64,7 +57,6 @@
       - restart bind
 
   - name: Write out reverse zone file
-    become: yes
     template:
       src: ../templates/reverse.j2
       dest: /var/named/reverse.db

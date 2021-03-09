@@ -330,7 +330,7 @@ workers:
 EOF
 
 pushd ${my_dir}
-ansible-playbook -e @${WORKSPACE}/helper_vars.env ./tasks/setup_dns.yaml
+ansible-playbook --become -e @${WORKSPACE}/helper_vars.env ./tasks/setup_dns.yaml
 popd
 
 exit 0
