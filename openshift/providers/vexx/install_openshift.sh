@@ -332,6 +332,7 @@ EOF
 pushd ${my_dir}
 ansible-playbook --become -e @${WORKSPACE}/helper_vars.env ./tasks/setup_dns.yaml
 ansible-playbook --become -e @${WORKSPACE}/helper_vars.env ./tasks/setup_httpd.yaml
+ansible-playbook --become -e @${WORKSPACE}/helper_vars.env ./tasks/setup_haproxy.yaml
 popd
 
 exit 0

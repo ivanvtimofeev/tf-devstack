@@ -1,0 +1,30 @@
+---
+# Setup OCP4 Helper loadbalances
+- hosts: all
+  handlers:
+  - import_tasks: ../handlers/main.yaml
+  remote_user: root
+  tasks:
+  - name: Install needed packages
+    package:
+      name:
+        - "haproxy"
+      state: present
+  - name: Remove existing haproxy config
+    file:
+      path: /etc/haproxy/haproxy.cfg
+      state: absent
+
+  - name: Write out haproxy config file
+    template:
+      src: ../templates/haproxy.cfg.j2
+      dest: /etc/haproxy/haproxy.cfg
+    notify:
+      - restart haproxy
+  - name: SEBool allow haproxy connect any port
+    seboolean:
+      name: haproxy_connect_any
+      state: yes
+      persistent: yes
+    notify:
+      - restart haproxy

@@ -1,5 +1,5 @@
 ---
-# Setup OCP4 Helper DNS
+# Setup OCP4 Helper httpd
 - hosts: all
   handlers:
   - import_tasks: ../handlers/main.yaml
