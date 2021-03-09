@@ -29,7 +29,6 @@ if [[ -f $OPENSHIFT_INSTALL_DIR/ports.yaml ]]; then
 - import_playbook: common.yaml
 - hosts: all
   gather_facts: no
-
   tasks:
   - name: 'Remove the bootstrap server port'
     os_port:
@@ -46,7 +45,7 @@ if [[ -f $OPENSHIFT_INSTALL_DIR/ports.yaml ]]; then
       state: absent
     with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
 EOF
-    ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/destroy_bootstrap.yaml
+    ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/destroy_ports.yaml
 fi
 
 exit 0
