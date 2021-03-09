@@ -348,7 +348,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
     "config": {
       "append": [{
         "source": "${bootstrap_ignition_url}",
-        "verification": {},
+        "verification": {}
       }]
     },
     "security": {
