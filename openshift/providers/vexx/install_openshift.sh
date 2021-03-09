@@ -365,8 +365,8 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
   "networkd": {
     "units": [
       {
-        "name": "00-ens192.network",
-        "contents": "[Match]\nName=ens192\n\n[Network]\nAddress=.${bootstrap_ip}/28\nGateway=${default_gate}\nDNS=${default_dns}\n"
+        "name": "00-ens3.network",
+        "contents": "[Match]\nName=ens3\n\n[Network]\nAddress=.${bootstrap_ip}/28\nGateway=${default_gate}\nDNS=${default_dns}\n"
       }
     ]
   },
