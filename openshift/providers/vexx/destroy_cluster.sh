@@ -8,6 +8,7 @@ source ${my_dir}/functions
 [[ -n "${WORKSPACE}" ]] || err "Setup workspace"
 
 export KUBERNETES_CLUSTER_DOMAIN=${KUBERNETES_CLUSTER_DOMAIN:-"example.com"}
+export KUBERNETES_CLUSTER_NAME=${KUBERNETES_CLUSTER_NAME:-"test1"}
 export INSTALL_DIR=${INSTALL_DIR:-"${WORKSPACE}/install-${KUBERNETES_CLUSTER_NAME}"}
 export OPENSHIFT_INSTALL_DIR=${INSTALL_DIR:-"os-install-config"}
 
