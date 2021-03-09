@@ -339,7 +339,8 @@ sudo cp ${OPENSHIFT_INSTALL_DIR}/bootstrap.ign /var/www/html/ignition/
 sudo chmod 644 /var/www/html/ignition/bootstrap.ign
 
 bootstrap_ignition_url="http://${NODE_IP}/ignition/bootstrap.ign"
-
+default_gate=$(ip r | awk '/default/{print $3}')
+default_dns=${NODE_IP}
 ca_sert=$(cat ${OPENSHIFT_INSTALL_DIR}/auth/kubeconfig | yq -r '.clusters[0].cluster["certificate-authority-data"]')
 cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
 {
@@ -361,12 +362,48 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
     "timeouts": {},
     "version": "2.4.0"
   },
-  "networkd": {},
+  "networkd": {
+    "units": [
+      {
+        "name": "00-ens192.network",
+        "contents": "[Match]\nName=ens192\n\n[Network]\nAddress=.${bootstrap_ip}/28\nGateway=${default_gate}\nDNS=${default_dns}\n"
+      }
+    ]
+  },
   "passwd": {},
   "storage": {},
   "systemd": {}
 }
 EOF
+
+cat <<EOF > $OPENSHIFT_INSTALL_DIR/bootstrap.yaml
+# Required Python packages:
+#
+# ansible
+# openstackclient
+# openstacksdk
+# netaddr
+
+- import_playbook: common.yaml
+
+- hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: 'Create the bootstrap server'
+    os_server:
+      name: "{{ os_bootstrap_server_name }}"
+      image: "{{ os_image_rhcos }}"
+      flavor: "{{ os_flavor_master }}"
+      volume_size: 25
+      boot_from_volume: True
+      userdata: "{{ lookup('file', os_bootstrap_ignition) | string }}"
+      auto_ip: no
+      nics:
+      - port-name: "{{ os_port_bootstrap }}"
+EOF
+
+ansible-playbook -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/bootstrap.yaml
 
 exit 0
 
