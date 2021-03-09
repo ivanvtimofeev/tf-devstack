@@ -1,6 +1,15 @@
 #!/bin/bash -ex
 
-OPENSHIFT_INSTALL_DIR=${OPENSHIFT_INSTALL_DIR:-"os-install-config"}
+my_file=$(realpath "$0")
+my_dir="$(dirname $my_file)"
+
+source ${my_dir}/functions
+
+[[ -n "${WORKSPACE}" ]] || err "Setup workspace"
+
+export KUBERNETES_CLUSTER_DOMAIN=${KUBERNETES_CLUSTER_DOMAIN:-"example.com"}
+export INSTALL_DIR=${INSTALL_DIR:-"${WORKSPACE}/install-${KUBERNETES_CLUSTER_NAME}"}
+export OPENSHIFT_INSTALL_DIR=${INSTALL_DIR:-"os-install-config"}
 
 export INFRA_ID=$(jq -r .infraID $OPENSHIFT_INSTALL_DIR/metadata.json)
 if [[ -z "${INFRA_ID}" ]]; then

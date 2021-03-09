@@ -3,9 +3,10 @@
 my_file=$(realpath "$0")
 my_dir="$(dirname $my_file)"
 
-echo "Workspace is $WORKSPACE"
+source ${my_dir}/functions
 
-OPENSHIFT_INSTALL_DIR=${OPENSHIFT_INSTALL_DIR:-"${WORKSPACE}/os-install-config"}
+echo "Workspace is $WORKSPACE"
+OPENSHIFT_INSTALL_DIR=${INSTALL_DIR:-"${WORKSPACE}/os-install-config"}
 OS_IMAGE_PUBLIC_SERVICE=${OS_IMAGE_PUBLIC_SERVICE:="https://image.public.sjc1.vexxhost.net/"}
 OPENSHIFT_VERSION="4.5.21"
 
