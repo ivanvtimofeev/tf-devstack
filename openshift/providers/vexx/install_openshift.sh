@@ -362,16 +362,17 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
     "timeouts": {},
     "version": "2.4.0"
   },
-  "networkd": {
-    "units": [
-      {
-        "name": "00-ens3.network",
-        "contents": "[Match]\nName=ens3\n\n[Network]\nAddress=.${bootstrap_ip}/28\nGateway=${default_gate}\nDNS=${default_dns}\n"
-      }
-    ]
-  },
+  "networkd": {},
   "passwd": {},
-  "storage": {},
+  "storage": {
+    "storage": {
+    "files": [{
+      "path": "/etc/NetworkManager/conf.d/ens3.conf ",
+      "mode": 644,
+      "contents": { "source": "data:,%5Bglobal-dns-domain-%2A%5D%0D%0Aservers%3D${default_dns}" }
+    }]
+  }
+  },
   "systemd": {}
 }
 EOF
