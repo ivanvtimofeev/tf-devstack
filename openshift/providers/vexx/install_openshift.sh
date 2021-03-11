@@ -156,6 +156,16 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/common.yaml
       os_subnet: "{{ infraID }}-nodes"
       os_router: "${VEXX_ROUTER}"
       # Port names
+      master_addresses:
+      - "10.113.0.50"
+      - "10.113.0.51"
+      - "10.113.0.52"
+      worker_addresses:
+      - "10.113.0.60"
+      - "10.113.0.61"
+      - "10.113.0.62"
+      bootstrap_address: "10.113.0.3"
+      helper_address: "10.113.0.2"
       os_port_helper: "{{ infraID }}-helper-port"
       os_port_bootstrap: "{{ infraID }}-bootstrap-port"
       os_port_master: "{{ infraID }}-master-port"
@@ -225,7 +235,7 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
   - name: 'Create a subnet'
     os_subnet:
       dns_nameservers:
-       - 10.113.0.5
+       - {{ helper_address }}
        - 8.8.8.8
       name: "{{ os_subnet }}"
       network_name: "{{ os_network }}"
@@ -256,7 +266,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/ports.yaml
       name: "{{ os_port_helper }}"
       network: "{{ os_network }}"
       fixed_ips:
-        - ip_address: 10.113.0.5
+        - ip_address: {{ helper_address }}
       security_groups:
       - "{{ os_sg_master }}"
 
@@ -273,7 +283,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/ports.yaml
       name: "{{ os_port_bootstrap }}"
       network: "{{ os_network }}"
       fixed_ips:
-      - subnet_id: "{{ os_subnet }}"
+        - ip_address: "{{ bootstrap_address }}"
       security_groups:
       - "{{ os_sg_master }}"
 
@@ -290,7 +300,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/ports.yaml
       name: "{{ item.1 }}-{{ item.0 }}"
       network: "{{ os_network }}"
       fixed_ips:
-        - subnet_id: "{{ os_subnet }}"
+      - ip_address: "{{ master_addresses[item.0] }}"
       security_groups:
       - "{{ os_sg_master }}"
     with_indexed_items: "{{ [os_port_master] * os_cp_nodes_number }}"
@@ -311,7 +321,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/ports.yaml
       name: "{{ item.1 }}-{{ item.0 }}"
       network: "{{ os_network }}"
       fixed_ips:
-        subnet_id: "{{ os_subnet }}"
+      - ip_address: "{{ worker_addresses[item.0] }}"
       security_groups:
       - "{{ os_sg_worker }}"
     with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
