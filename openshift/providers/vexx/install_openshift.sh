@@ -430,6 +430,10 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/servers.yaml
   gather_facts: no
 
   tasks:
+  - name: 'List the Server groups'
+    command:
+      cmd: "openstack server group list -f json -c ID -c Name"
+    register: server_group_list
 
   - name: 'Parse the Server group ID from existing'
     set_fact:
