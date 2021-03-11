@@ -48,7 +48,6 @@ if [[ -f $OPENSHIFT_INSTALL_DIR/ports.yaml ]]; then
     os_port:
       name: "{{ os_port_helper }}"
       state: absent
-    with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
   - name: 'Delete a subnet'
     os_subnet:
       name: "{{ os_subnet }}"
