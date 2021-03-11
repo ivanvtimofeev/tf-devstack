@@ -367,7 +367,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
   "storage": {
     "files": [{
       "filesystem": "root",
-      "path": "/run/NetworkManager/conf.d/00-dns.conf ",
+      "path": "/var/run/NetworkManager/conf.d/00-dns.conf ",
       "mode": 420,
       "contents": { "source": "data:,%0A%5Bglobal-dns-domain-%2A%5D%0Aservers%3D${default_dns}%0A%0A%0A%5Bglobal-dns-domain-example.com%5D%0Aservers%3D${default_dns}%0A%0A" }
     }]
