@@ -376,6 +376,17 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
 }
 EOF
 
+for index in $(seq 0 2); do
+    MASTER_HOSTNAME="$INFRA_ID-master-$index\n"
+    python3 -c "import base64, json, sys;
+ignition = json.load(sys.stdin);
+files = ignition['storage'].get('files', []);
+files.append({'path': '/etc/hostname', 'mode': 420, 'contents': {'source': 'data:text/plain;charset=utf-8;base64,' + base64.standard_b64encode(b'$MASTER_HOSTNAME').decode().strip(), 'verification': {}}, 'filesystem': 'root'});
+files.append({"filesystem": "root","path": "/etc/NetworkManager/conf.d/00-dns.conf","mode": 420,"contents": { "source": "data:,%0A%5Bglobal-dns-domain-%2A%5D%0Aservers%3D${default_dns}%0A%0A%0A%5Bglobal-dns-domain-example.com%5D%0Aservers%3D${default_dns}%0A%0A" }});
+ignition['storage']['files'] = files;
+json.dump(ignition, sys.stdout)" <$OPENSHIFT_INSTALL_DIR/master.ign > "$OPENSHIFT_INSTALL_DIR/$INFRA_ID-master-$index-ignition.json"
+done
+
 cat <<EOF > $OPENSHIFT_INSTALL_DIR/bootstrap.yaml
 # Required Python packages:
 #
@@ -405,17 +416,67 @@ EOF
 
 ansible-playbook -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/bootstrap.yaml
 
+cat <<EOF > $OPENSHIFT_INSTALL_DIR/servers.yaml
+# Required Python packages:
+#
+# ansible
+# openstackclient
+# openstacksdk
+# netaddr
+
+- import_playbook: common.yaml
+
+- hosts: all
+  gather_facts: no
+
+  tasks:
+
+  - name: 'Parse the Server group ID from existing'
+    set_fact:
+      server_group_id: "{{ (server_group_list.stdout | from_json | json_query(list_query) | first).ID }}"
+    vars:
+      list_query: "[?Name=='{{ os_cp_server_group_name }}']"
+    when:
+    - "os_cp_server_group_name|string in server_group_list.stdout"
+
+  - name: 'Create the Control Plane server group'
+    command:
+      cmd: "openstack --os-compute-api-version=2.15 server group create -f json -c id --policy=soft-anti-affinity {{ os_cp_server_group_name }}"
+    register: server_group_created
+    when:
+    - server_group_id is not defined
+
+  - name: 'Parse the Server group ID from creation'
+    set_fact:
+      server_group_id: "{{ (server_group_created.stdout | from_json).id }}"
+    when:
+    - server_group_id is not defined
+
+  - name: 'Create the Control Plane servers'
+    os_server:
+      name: "{{ item.1 }}-{{ item.0 }}"
+      image: "{{ os_image_rhcos }}"
+      flavor: "{{ os_flavor_master }}"
+      volume_size: 25
+      boot_from_volume: True
+      auto_ip: no
+      # The ignition filename will be concatenated with the Control Plane node
+      # name and its 0-indexed serial number.
+      # In this case, the first node will look for this filename:
+      #    "{{ infraID }}-master-0-ignition.json"
+      userdata: "{{ lookup('file', [item.1, item.0, 'ignition.json'] | join('-')) | string }}"
+      nics:
+      - port-name: "{{ os_port_master }}-{{ item.0 }}"
+      scheduler_hints:
+        group: "{{ server_group_id }}"
+    with_indexed_items: "{{ [os_cp_server_name] * os_cp_nodes_number }}"
+EOF
+
+ansible-playbook -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/servers.yaml
+
+
 exit 0
 
-for index in $(seq 0 2); do
-    MASTER_HOSTNAME="$INFRA_ID-master-$index\n"
-    python3 -c "import base64, json, sys;
-ignition = json.load(sys.stdin);
-files = ignition['storage'].get('files', []);
-files.append({'path': '/etc/hostname', 'mode': 420, 'contents': {'source': 'data:text/plain;charset=utf-8;base64,' + base64.standard_b64encode(b'$MASTER_HOSTNAME').decode().strip(), 'verification': {}}, 'filesystem': 'root'});
-ignition['storage']['files'] = files;
-json.dump(ignition, sys.stdout)" <$OPENSHIFT_INSTALL_DIR/master.ign > "$OPENSHIFT_INSTALL_DIR/$INFRA_ID-master-$index-ignition.json"
-done
 
 
 cat <<EOF > $OPENSHIFT_INSTALL_DIR/servers.yaml
