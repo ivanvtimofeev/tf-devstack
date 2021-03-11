@@ -232,9 +232,6 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
       cidr: "{{ os_subnet_range }}"
       allocation_pool_start: "{{ os_subnet_range | next_nth_usable(10) }}"
       allocation_pool_end: "{{ os_subnet_range | ipaddr('last_usable') }}"
-  - name: 'Set the cluster subnet tag'
-    command:
-      cmd: "openstack subnet set --tag {{ cluster_id_tag }} {{ os_subnet }}"
   - name: 'Create external router'
     os_router:
       name: "{{ os_router }}"
