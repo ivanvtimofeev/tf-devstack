@@ -153,11 +153,10 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/common.yaml
     set_fact:
       cluster_id_tag: "openshiftClusterID={{ infraID }}"
       os_network: "${VEXX_NETWORK}"
-      os_subnet: "${VEXX_SUBNET}-nodes"
-      os_router: "${VEXX_ROUTER}-external-router"
+      os_subnet: "{{ infraID }}-nodes"
+      os_router: "${VEXX_ROUTER}"
       # Port names
- #     os_port_api: "{{ infraID }}-api-port"
- #     os_port_ingress: "{{ infraID }}-ingress-port"
+      os_port_helper: "{{ infraID }}-helper-port"
       os_port_bootstrap: "{{ infraID }}-bootstrap-port"
       os_port_master: "{{ infraID }}-master-port"
       os_port_worker: "{{ infraID }}-worker-port"
@@ -165,8 +164,6 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/common.yaml
       os_sg_master: "allow_all"
       os_sg_worker: "allow_all"
       # Server names
- #     os_api_lb_server_name: "{{ infraID }}-api-lb"
- #     os_ing_lb_server_name: "${INFRA_ID}-ing-lb"
       os_bootstrap_server_name: "{{ infraID }}-bootstrap"
       os_cp_server_name: "{{ infraID }}-master"
       os_cp_server_group_name: "{{ infraID }}-master"
@@ -184,7 +181,7 @@ all:
       ansible_python_interpreter: "{{ansible_playbook_python}}"
 
       # User-provided values
-      os_subnet_range: '10.0.0.0/16'
+      os_subnet_range: '10.113.0.0/16'
       os_flavor_master: 'v2-standard-16'
       os_flavor_worker: 'v2-highcpu-16'
       os_image_rhcos: 'rhcos'
@@ -213,6 +210,42 @@ all:
 EOF
 
 
+
+cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
+# Required Python packages:
+#
+# ansible
+# openstackclient
+# openstacksdk
+# netaddr
+- import_playbook: common.yaml
+- hosts: all
+  gather_facts: no
+  tasks:
+  - name: 'Create a subnet'
+    os_subnet:
+      dns_nameservers:
+       - 10.113.0.5
+       - 8.8.8.8
+      name: "{{ os_subnet }}"
+      network_name: "{{ os_network }}"
+      cidr: "{{ os_subnet_range }}"
+      allocation_pool_start: "{{ os_subnet_range | next_nth_usable(10) }}"
+      allocation_pool_end: "{{ os_subnet_range | ipaddr('last_usable') }}"
+  - name: 'Set the cluster subnet tag'
+    command:
+      cmd: "openstack subnet set --tag {{ cluster_id_tag }} {{ os_subnet }}"
+  - name: 'Create external router'
+    os_router:
+      name: "{{ os_router }}"
+      network: "{{ os_external_network }}"
+      interfaces:
+      - "{{ os_subnet }}"
+EOF
+
+ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/network.yaml
+
+
 cat <<EOF > $OPENSHIFT_INSTALL_DIR/ports.yaml
 # Required Python packages:
 #
@@ -227,10 +260,29 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/ports.yaml
   gather_facts: no
 
   tasks:
+  - name: 'Create the helper server port'
+    os_port:
+      name: "{{ os_port_helper }}"
+      network: "{{ os_network }}"
+      fixed_ips:
+        - ip_address: 10.113.0.5
+      security_groups:
+      - "{{ os_sg_master }}"
+
+  - name: 'Set helper port tag'
+    command:
+      cmd: "openstack port set --tag {{ cluster_id_tag }} {{ os_port_helper }}"
+
+  - name: 'Disable helper port security'
+    command:
+      cmd: "openstack port set --no-security-group --disable-port-security {{ os_port_helper }}"
+
   - name: 'Create the bootstrap server port'
     os_port:
       name: "{{ os_port_bootstrap }}"
       network: "{{ os_network }}"
+      fixed_ips:
+        - subnet_id: "{{ os_subnet }}"
       security_groups:
       - "{{ os_sg_master }}"
 
@@ -246,6 +298,8 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/ports.yaml
     os_port:
       name: "{{ item.1 }}-{{ item.0 }}"
       network: "{{ os_network }}"
+      fixed_ips:
+        - subnet_id: "{{ os_subnet }}"
       security_groups:
       - "{{ os_sg_master }}"
     with_indexed_items: "{{ [os_port_master] * os_cp_nodes_number }}"
@@ -265,6 +319,8 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/ports.yaml
     os_port:
       name: "{{ item.1 }}-{{ item.0 }}"
       network: "{{ os_network }}"
+      fixed_ips:
+        subnet_id: "{{ os_subnet }}"
       security_groups:
       - "{{ os_sg_worker }}"
     with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
@@ -364,14 +420,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
   },
   "networkd": {},
   "passwd": {},
-  "storage": {
-    "files": [{
-      "filesystem": "root",
-      "path": "/etc/NetworkManager/conf.d/00-dns.conf",
-      "mode": 420,
-      "contents": { "source": "data:,%0A%5Bglobal-dns-domain-%2A%5D%0Aservers%3D${default_dns}%0A%0A%0A%5Bglobal-dns-domain-example.com%5D%0Aservers%3D${default_dns}%0A%0A" }
-    }]
-  },
+  "storage": {},
   "systemd": {}
 }
 EOF
@@ -411,7 +460,6 @@ for index in $(seq 0 2); do
 ignition = json.load(sys.stdin);
 files = ignition['storage'].get('files', []);
 files.append({'path': '/etc/hostname', 'mode': 420, 'contents': {'source': 'data:text/plain;charset=utf-8;base64,' + base64.standard_b64encode(b'$MASTER_HOSTNAME').decode().strip(), 'verification': {}}, 'filesystem': 'root'});
-files.append({'filesystem': 'root','path': '/etc/NetworkManager/conf.d/00-dns.conf','mode': 420,'contents': { 'source': 'data:,%0A%5Bglobal-dns-domain-%2A%5D%0Aservers%3D${default_dns}%0A%0A%0A%5Bglobal-dns-domain-example.com%5D%0Aservers%3D${default_dns}%0A%0A' }});
 ignition['storage']['files'] = files;
 json.dump(ignition, sys.stdout)" <$OPENSHIFT_INSTALL_DIR/master.ign > "$OPENSHIFT_INSTALL_DIR/$INFRA_ID-master-$index-ignition.json"
 done
@@ -478,8 +526,6 @@ EOF
 
 ansible-playbook -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/servers.yaml
 
-
-exit 0
 
 
 
