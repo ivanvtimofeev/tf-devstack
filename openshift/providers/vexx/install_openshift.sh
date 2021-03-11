@@ -376,17 +376,6 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
 }
 EOF
 
-for index in $(seq 0 2); do
-    MASTER_HOSTNAME="$INFRA_ID-master-$index\n"
-    python3 -c "import base64, json, sys;
-ignition = json.load(sys.stdin);
-files = ignition['storage'].get('files', []);
-files.append({'path': '/etc/hostname', 'mode': 420, 'contents': {'source': 'data:text/plain;charset=utf-8;base64,' + base64.standard_b64encode(b'$MASTER_HOSTNAME').decode().strip(), 'verification': {}}, 'filesystem': 'root'});
-files.append({"filesystem": "root","path": "/etc/NetworkManager/conf.d/00-dns.conf","mode": 420,"contents": { "source": "data:,%0A%5Bglobal-dns-domain-%2A%5D%0Aservers%3D${default_dns}%0A%0A%0A%5Bglobal-dns-domain-example.com%5D%0Aservers%3D${default_dns}%0A%0A" }});
-ignition['storage']['files'] = files;
-json.dump(ignition, sys.stdout)" <$OPENSHIFT_INSTALL_DIR/master.ign > "$OPENSHIFT_INSTALL_DIR/$INFRA_ID-master-$index-ignition.json"
-done
-
 cat <<EOF > $OPENSHIFT_INSTALL_DIR/bootstrap.yaml
 # Required Python packages:
 #
@@ -415,6 +404,17 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/bootstrap.yaml
 EOF
 
 ansible-playbook -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/bootstrap.yaml
+
+for index in $(seq 0 2); do
+    MASTER_HOSTNAME="$INFRA_ID-master-$index\n"
+    python3 -c "import base64, json, sys;
+ignition = json.load(sys.stdin);
+files = ignition['storage'].get('files', []);
+files.append({'path': '/etc/hostname', 'mode': 420, 'contents': {'source': 'data:text/plain;charset=utf-8;base64,' + base64.standard_b64encode(b'$MASTER_HOSTNAME').decode().strip(), 'verification': {}}, 'filesystem': 'root'});
+files.append({"filesystem": "root","path": "/etc/NetworkManager/conf.d/00-dns.conf","mode": 420,"contents": { "source": "data:,%0A%5Bglobal-dns-domain-%2A%5D%0Aservers%3D${default_dns}%0A%0A%0A%5Bglobal-dns-domain-example.com%5D%0Aservers%3D${default_dns}%0A%0A" }});
+ignition['storage']['files'] = files;
+json.dump(ignition, sys.stdout)" <$OPENSHIFT_INSTALL_DIR/master.ign > "$OPENSHIFT_INSTALL_DIR/$INFRA_ID-master-$index-ignition.json"
+done
 
 cat <<EOF > $OPENSHIFT_INSTALL_DIR/servers.yaml
 # Required Python packages:
