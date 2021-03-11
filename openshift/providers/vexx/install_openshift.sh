@@ -232,11 +232,6 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
       cidr: "{{ os_subnet_range }}"
       allocation_pool_start: "{{ os_subnet_range | next_nth_usable(10) }}"
       allocation_pool_end: "{{ os_subnet_range | ipaddr('last_usable') }}"
-  - name: 'Create external router'
-    os_router:
-      name: "{{ os_router }}"
-      interfaces:
-      - "{{ os_subnet }}"
 EOF
 
 ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/network.yaml
@@ -278,7 +273,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/ports.yaml
       name: "{{ os_port_bootstrap }}"
       network: "{{ os_network }}"
       fixed_ips:
-        - subnet_id: "{{ os_subnet }}"
+      - subnet_id: "{{ os_subnet }}"
       security_groups:
       - "{{ os_sg_master }}"
 
