@@ -266,7 +266,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/ports.yaml
       name: "{{ os_port_helper }}"
       network: "{{ os_network }}"
       fixed_ips:
-        - ip_address: {{ helper_address }}
+        - ip_address: "{{ helper_address }}"
       security_groups:
       - "{{ os_sg_master }}"
 
