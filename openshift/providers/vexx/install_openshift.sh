@@ -238,7 +238,6 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
   - name: 'Create external router'
     os_router:
       name: "{{ os_router }}"
-      network: "{{ os_external_network }}"
       interfaces:
       - "{{ os_subnet }}"
 EOF
