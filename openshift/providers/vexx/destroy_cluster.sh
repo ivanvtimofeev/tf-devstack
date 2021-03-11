@@ -44,6 +44,10 @@ if [[ -f $OPENSHIFT_INSTALL_DIR/ports.yaml ]]; then
       name: "{{ item.1 }}-{{ item.0 }}"
       state: absent
     with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
+  - name: 'Delete a subnet'
+    os_subnet:
+      name: "{{ os_subnet }}"
+      state: absent
 EOF
     ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/destroy_ports.yaml
 fi
