@@ -366,6 +366,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
   "passwd": {},
   "storage": {
     "files": [{
+      "filesystem": "root",
       "path": "/etc/NetworkManager/conf.d/ens3.conf ",
       "mode": 420,
       "contents": { "source": "data:,%5Bglobal-dns-domain-%2A%5D%0Aservers%3D${default_dns}" }
