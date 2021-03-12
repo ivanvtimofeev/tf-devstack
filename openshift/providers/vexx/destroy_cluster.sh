@@ -23,7 +23,7 @@ if [[ ! -f $OPENSHIFT_INSTALL_DIR/inventory.yaml || ! -f $OPENSHIFT_INSTALL_DIR/
   exit 0
 fi
 
-if [[  "$(openstack port list | grep "10.113.0.1\'" | wc -l)" != 0 ]]; then
+if [[  "$(openstack port list | grep "10.113.0.1'" | wc -l)" != 0 ]]; then
   openstack router remove subnet router1 ${INFRA_ID}-nodes
 fi
 
