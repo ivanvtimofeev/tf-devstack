@@ -19,6 +19,7 @@ export VEXX_NETWORK=${VEXX_NETWORK:-"management"}
 export VEXX_SUBNET=${VEXX_SUBNET:-"management"}
 export VEXX_GATEWAY=${VEXX_GATEWAY:-"10.0.0.1"}
 export VEXX_ROUTER=${VEXX_ROUTER:-"router1"}
+export HELPER_IP="10.113.0.2"
 
 sudo yum install -y python3 epel-release
 sudo yum install -y jq
@@ -165,7 +166,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/common.yaml
       - "10.113.0.61"
       - "10.113.0.62"
       bootstrap_address: "10.113.0.3"
-      helper_address: "10.113.0.2"
+      helper_address: "${HELPER_IP}"
       os_port_helper: "{{ infraID }}-helper-port"
       os_port_bootstrap: "{{ infraID }}-bootstrap-port"
       os_port_master: "{{ infraID }}-master-port"
@@ -403,9 +404,10 @@ bootstrap_ip=$(echo "$addrs" | jq -r --arg server "$server"  '.[] | select(.Name
 cat <<EOF > ${WORKSPACE}/helper_vars.env
 ---
 disk: vda
+install_dir: "${OPENSHIFT_INSTALL_DIR}"
 helper:
   name: "helper"
-  ipaddr: "10.113.0.2"
+  ipaddr: "${HELPER_IP}"
 dns:
   domain: "${KUBERNETES_CLUSTER_DOMAIN}"
   clusterid: "${KUBERNETES_CLUSTER_NAME}"
@@ -434,14 +436,8 @@ ansible-playbook --become -e @${WORKSPACE}/helper_vars.env ./tasks/setup_httpd.y
 ansible-playbook --become -e @${WORKSPACE}/helper_vars.env ./tasks/setup_haproxy.yaml
 popd
 
-exit 0
-
-sudo cp ${OPENSHIFT_INSTALL_DIR}/bootstrap.ign /var/www/html/ignition/
-sudo chmod 644 /var/www/html/ignition/bootstrap.ign
-
-bootstrap_ignition_url="http://${NODE_IP}:8080/ignition/bootstrap.ign"
+bootstrap_ignition_url="http://${HELPER_IP}:8080/ignition/bootstrap.ign"
 default_gate=$(ip r | awk '/default/{print $3}')
-default_dns=${NODE_IP}
 ca_sert=$(cat ${OPENSHIFT_INSTALL_DIR}/auth/kubeconfig | yq -r '.clusters[0].cluster["certificate-authority-data"]')
 cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
 {
@@ -523,88 +519,6 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/servers.yaml
   gather_facts: no
 
   tasks:
-  - name: 'List the Server groups'
-    command:
-      cmd: "openstack server group list -f json -c ID -c Name"
-    register: server_group_list
-
-  - name: 'Parse the Server group ID from existing'
-    set_fact:
-      server_group_id: "{{ (server_group_list.stdout | from_json | json_query(list_query) | first).ID }}"
-    vars:
-      list_query: "[?Name=='{{ os_cp_server_group_name }}']"
-    when:
-    - "os_cp_server_group_name|string in server_group_list.stdout"
-
-  - name: 'Create the Control Plane server group'
-    command:
-      cmd: "openstack --os-compute-api-version=2.15 server group create -f json -c id --policy=soft-anti-affinity {{ os_cp_server_group_name }}"
-    register: server_group_created
-    when:
-    - server_group_id is not defined
-
-  - name: 'Parse the Server group ID from creation'
-    set_fact:
-      server_group_id: "{{ (server_group_created.stdout | from_json).id }}"
-    when:
-    - server_group_id is not defined
-
-  - name: 'Create the Control Plane servers'
-    os_server:
-      name: "{{ item.1 }}-{{ item.0 }}"
-      image: "{{ os_image_rhcos }}"
-      flavor: "{{ os_flavor_master }}"
-      volume_size: 25
-      boot_from_volume: True
-      auto_ip: no
-      # The ignition filename will be concatenated with the Control Plane node
-      # name and its 0-indexed serial number.
-      # In this case, the first node will look for this filename:
-      #    "{{ infraID }}-master-0-ignition.json"
-      userdata: "{{ lookup('file', [item.1, item.0, 'ignition.json'] | join('-')) | string }}"
-      nics:
-      - port-name: "{{ os_port_master }}-{{ item.0 }}"
-      scheduler_hints:
-        group: "{{ server_group_id }}"
-    with_indexed_items: "{{ [os_cp_server_name] * os_cp_nodes_number }}"
-EOF
-
-ansible-playbook -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/servers.yaml
-
-
-
-
-cat <<EOF > $OPENSHIFT_INSTALL_DIR/servers.yaml
-# Required Python packages:
-#
-# ansible
-# openstackclient
-# openstacksdk
-# netaddr
-
-- import_playbook: common.yaml
-
-- hosts: all
-  gather_facts: no
-
-  tasks:
-  - name: 'Create the bootstrap server'
-    os_server:
-      name: "{{ os_bootstrap_server_name }}"
-      image: "{{ os_image_rhcos }}"
-      flavor: "{{ os_flavor_master }}"
-      volume_size: 25
-      boot_from_volume: True
-      userdata: "{{ lookup('file', os_bootstrap_ignition) | string }}"
-      auto_ip: no
-      nics:
-      - port-name: "{{ os_port_bootstrap }}"
-
-  - name: 'Create the bootstrap floating IP'
-    os_floating_ip:
-      state: present
-      network: "{{ os_external_network }}"
-      server: "{{ os_bootstrap_server_name }}"
   - name: 'List the Server groups'
     command:
       cmd: "openstack server group list -f json -c ID -c Name"

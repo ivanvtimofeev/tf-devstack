@@ -32,3 +32,10 @@
     with_items:
       - absent
       - directory
+  - name: Copy bootstrap ignition
+    ansible.builtin.copy:
+      src: "{{ install_dir }}/bootstrap.ign"
+      dest: "/var/www/html/ignition/bootstrap.ign"
+      owner: "root"
+      group: "root"
+      mode: '0644'
