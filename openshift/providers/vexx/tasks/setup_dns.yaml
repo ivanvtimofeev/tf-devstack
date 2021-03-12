@@ -1,6 +1,6 @@
 ---
-# Setup OCP4 DNS
-- hosts: all
+# Setup OCP4 Helper DNS
+- hosts: helpr_host
   handlers:
   - import_tasks: ../handlers/main.yaml
   remote_user: root

@@ -1,6 +1,6 @@
 ---
 # Setup OCP4 Helper loadbalances
-- hosts: all
+- hosts: helper_host
   handlers:
   - import_tasks: ../handlers/main.yaml
   remote_user: root
