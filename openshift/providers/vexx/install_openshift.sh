@@ -405,7 +405,7 @@ cat <<EOF > ${WORKSPACE}/helper_vars.env
 disk: vda
 helper:
   name: "helper"
-  ipaddr: "${NODE_IP}"
+  ipaddr: "10.113.0.2"
 dns:
   domain: "${KUBERNETES_CLUSTER_DOMAIN}"
   clusterid: "${KUBERNETES_CLUSTER_NAME}"
