@@ -245,6 +245,10 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
       cidr: "{{ os_subnet_range }}"
       allocation_pool_start: "{{ os_subnet_range | next_nth_usable(10) }}"
       allocation_pool_end: "{{ os_subnet_range | ipaddr('last_usable') }}"
+  - name: 'Attach subnet to router'
+    command:
+      cmd: " openstack router add subnet router1 {{ infra_id }}-nodes"
+    register: server_group_created
 EOF
 
 ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/network.yaml
@@ -343,10 +347,6 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/ports.yaml
 EOF
 
 ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/ports.yaml
-
-# Join subnet to router
-
- openstack router add subnet router1 ${INFRA_ID}-nodes
 
 # Create helper node
 
