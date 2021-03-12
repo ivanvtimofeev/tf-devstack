@@ -372,6 +372,12 @@ cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/helper.yaml
       nics:
       - port-name: "{{ os_port_helper }}"
 
+- name: Wait 300 seconds for port 22 to become open and contain "OpenSSH"
+  wait_for:
+    port: 22
+    host: {{ helper_address }}
+    delay: 3
+
 EOF
 
 ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/helper.yaml
