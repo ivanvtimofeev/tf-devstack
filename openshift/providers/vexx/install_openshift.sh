@@ -245,6 +245,9 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
       cidr: "{{ os_subnet_range }}"
       allocation_pool_start: "{{ os_subnet_range | next_nth_usable(10) }}"
       allocation_pool_end: "{{ os_subnet_range | ipaddr('last_usable') }}"
+  - name: Pause for 5 second
+    pause:
+      seconds: 5
   - name: 'Attach subnet to router'
     command:
       cmd: "openstack router add subnet router1 ${INFRA_ID}-nodes"
