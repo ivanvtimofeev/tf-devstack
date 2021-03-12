@@ -31,6 +31,11 @@ if [[ -f $OPENSHIFT_INSTALL_DIR/ports.yaml ]]; then
 - hosts: all
   gather_facts: no
   tasks:
+  - name: 'Remove helper-server'
+    os_server:
+      name: "{{ os_helper_server_name }}"
+      state: absent
+      delete_fip: yes
   - name: 'Remove the bootstrap server port'
     os_port:
       name: "{{ os_port_bootstrap }}"
