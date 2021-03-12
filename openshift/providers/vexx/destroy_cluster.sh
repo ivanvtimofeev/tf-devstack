@@ -23,6 +23,7 @@ if [[ ! -f $OPENSHIFT_INSTALL_DIR/inventory.yaml || ! -f $OPENSHIFT_INSTALL_DIR/
   exit 0
 fi
 
+openstack router remove subnet router1 ${INFRA_ID}-nodes || /bin/true
 
 if [[ -f $OPENSHIFT_INSTALL_DIR/ports.yaml ]]; then
     cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy_ports.yaml

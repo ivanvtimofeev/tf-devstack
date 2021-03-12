@@ -344,6 +344,10 @@ EOF
 
 ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/ports.yaml
 
+# Join subnet to router
+
+ openstack router add subnet router1 ${INFRA_ID}-nodes
+
 # Create helper node
 
 cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/helper.yaml
