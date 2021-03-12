@@ -247,8 +247,7 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
       allocation_pool_end: "{{ os_subnet_range | ipaddr('last_usable') }}"
   - name: 'Attach subnet to router'
     command:
-      cmd: " openstack router add subnet router1 {{ infraID }}-nodes"
-    register: server_group_created
+      cmd: "openstack router add subnet router1 ${INFRA_ID}-nodes"
 EOF
 
 ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/network.yaml
