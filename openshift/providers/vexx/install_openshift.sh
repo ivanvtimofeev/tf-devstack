@@ -372,11 +372,11 @@ cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/helper.yaml
       nics:
       - port-name: "{{ os_port_helper }}"
 
-- name: Wait 300 seconds for port 22 to become open and contain "OpenSSH"
-  wait_for:
-    port: 22
-    host: {{ helper_address }}
-    delay: 3
+  - name: 'Wait 180 seconds for port 22'
+    wait_for:
+      port: 22
+      host: "{{ helper_address }}"
+      delay: 3
 
 EOF
 
