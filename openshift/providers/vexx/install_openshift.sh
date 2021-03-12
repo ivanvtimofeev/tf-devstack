@@ -245,7 +245,8 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
       cidr: "{{ os_subnet_range }}"
       allocation_pool_start: "{{ os_subnet_range | next_nth_usable(10) }}"
       allocation_pool_end: "{{ os_subnet_range | ipaddr('last_usable') }}"
-  - name: Pause for 5 second
+# If remove thist pause we will have an error due to openstack API unavailable
+  - name: Pause for 3 second
     pause:
       seconds: 5
   - name: 'Attach subnet to router'
