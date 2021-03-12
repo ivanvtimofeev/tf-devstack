@@ -23,7 +23,7 @@ if [[ ! -f $OPENSHIFT_INSTALL_DIR/inventory.yaml || ! -f $OPENSHIFT_INSTALL_DIR/
   exit 0
 fi
 
-openstack router remove subnet router1 ${INFRA_ID}-nodes || /bin/true
+[[ openstack router remove subnet router1 ${INFRA_ID}-nodes || /bin/true ]]
 
 if [[ -f $OPENSHIFT_INSTALL_DIR/ports.yaml ]]; then
     cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy_ports.yaml
@@ -38,7 +38,7 @@ if [[ -f $OPENSHIFT_INSTALL_DIR/ports.yaml ]]; then
       delete_fip: yes
   - name: 'Remove the bootstrap server port'
     os_port:
-      name: "{{ os_port_bootstrap }}"
+      name: "{{ os_poopenstack router removt_bootstrap }}"
       state: absent
   - name: 'Delete the Control Plane ports'
     os_port:
