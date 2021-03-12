@@ -361,7 +361,7 @@ cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/helper.yaml
       volume_size: 25
       boot_from_volume: True
       auto_ip: no
-      key: "~/.ssh/id_rsa.pub"
+      key_name: "worker"
       nics:
       - port-name: "{{ os_port_helper }}"
 
