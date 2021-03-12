@@ -27,8 +27,8 @@ if [[  "$(openstack port list | grep "10.113.0.1\'" | wc -l)" != 0 ]]; then
   openstack router remove subnet router1 ${INFRA_ID}-nodes
 fi
 
-if [[ -f $OPENSHIFT_INSTALL_DIR/ports.yaml ]]; then
-    cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy_ports.yaml
+
+cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy_ports.yaml
 - import_playbook: common.yaml
 - hosts: all
   gather_facts: no
@@ -61,8 +61,8 @@ if [[ -f $OPENSHIFT_INSTALL_DIR/ports.yaml ]]; then
       name: "{{ os_subnet }}"
       state: absent
 EOF
-    ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/destroy_ports.yaml
-fi
+ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/destroy_ports.yaml
+
 
 exit 0
 
