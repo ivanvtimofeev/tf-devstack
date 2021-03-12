@@ -375,7 +375,6 @@ EOF
 
 ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/helper.yaml
 
-exit 0
 # Setup helper node
 addrs=$(openstack port list -c name -c fixed_ips -f json --tags openshiftClusterID=${INFRA_ID})
 
@@ -427,6 +426,8 @@ ansible-playbook --become -e @${WORKSPACE}/helper_vars.env ./tasks/setup_dns.yam
 ansible-playbook --become -e @${WORKSPACE}/helper_vars.env ./tasks/setup_httpd.yaml
 ansible-playbook --become -e @${WORKSPACE}/helper_vars.env ./tasks/setup_haproxy.yaml
 popd
+
+exit 0
 
 sudo cp ${OPENSHIFT_INSTALL_DIR}/bootstrap.ign /var/www/html/ignition/
 sudo chmod 644 /var/www/html/ignition/bootstrap.ign
