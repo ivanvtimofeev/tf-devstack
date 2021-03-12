@@ -175,6 +175,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/common.yaml
       os_sg_worker: "allow_all"
       # Server names
       os_bootstrap_server_name: "{{ infraID }}-bootstrap"
+      os_helper_server_name: "{{ infraID }}-helper"
       os_cp_server_name: "{{ infraID }}-master"
       os_cp_server_group_name: "{{ infraID }}-master"
       os_compute_server_name: "{{ infraID }}-worker"
@@ -194,7 +195,9 @@ all:
       os_subnet_range: '10.113.0.0/16'
       os_flavor_master: 'v2-standard-16'
       os_flavor_worker: 'v2-highcpu-16'
+      os_flavor_helper: 'v2-highcpu-16'
       os_image_rhcos: 'rhcos'
+      os_image_centos: 'prepared-centos7-202012120907'
       os_external_network: 'public'
       # OpenShift API floating IP address
       os_api_fip: '${OPENSHIFT_API_FIP}'
@@ -341,6 +344,33 @@ EOF
 
 ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/ports.yaml
 
+# Create helper node
+
+cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/helper.yaml
+- import_playbook: common.yaml
+
+- hosts: all
+  gather_facts: no
+
+  tasks:
+  - name: 'Create the helper server'
+    os_server:
+      name: "{{ os_helper_server_name }}"
+      image: "{{ os_image_centos }}"
+      flavor: "{{ os_flavor_helper }}"
+      volume_size: 25
+      boot_from_volume: True
+      auto_ip: no
+      key: "~/.ssh/id_rsa.pub"
+      nics:
+      - port-name: "{{ os_port_helper }}"
+
+EOF
+
+ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/helper.yaml
+
+exit 0
+# Setup helper node
 addrs=$(openstack port list -c name -c fixed_ips -f json --tags openshiftClusterID=${INFRA_ID})
 
 declare -a master_ips worker_ips
