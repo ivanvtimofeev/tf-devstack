@@ -239,6 +239,7 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
     os_subnet:
       dns_nameservers:
        - "{{ helper_address }}"
+       - 8.8.8.8
       name: "{{ os_subnet }}"
       network_name: "{{ os_network }}"
       cidr: "{{ os_subnet_range }}"
