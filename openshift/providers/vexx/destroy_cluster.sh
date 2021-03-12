@@ -40,7 +40,7 @@ cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy_ports.yaml
       delete_fip: yes
   - name: 'Remove the bootstrap server port'
     os_port:
-      name: "{{ os_poopenstack router removt_bootstrap }}"
+      name: "{{ os_port_bootstrap }}"
       state: absent
   - name: 'Delete the Control Plane ports'
     os_port:
