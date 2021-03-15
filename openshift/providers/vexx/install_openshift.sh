@@ -52,7 +52,7 @@ mkdir -p $OPENSHIFT_INSTALL_DIR
 
 cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/install-config.yaml
 apiVersion: v1
-baseDomain: ${KUBERNETES_CLUSTER_NAME}
+baseDomain: ${KUBERNETES_CLUSTER_DOMAIN}
 compute:
 - architecture: amd64
   hyperthreading: Enabled
