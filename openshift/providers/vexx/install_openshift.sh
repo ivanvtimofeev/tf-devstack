@@ -153,7 +153,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/common.yaml
   - name: 'Compute resource names'
     set_fact:
       cluster_id_tag: "openshiftClusterID={{ infraID }}"
-      os_network: "${VEXX_NETWORK}"
+      os_network: "{{ infraID }}-network"
       os_subnet: "{{ infraID }}-nodes"
       os_router: "${VEXX_ROUTER}"
       # Port names
@@ -236,6 +236,14 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
 - hosts: all
   gather_facts: no
   tasks:
+
+  tasks:
+  - name: 'Create the cluster network'
+    os_network:
+      name: "{{ os_network }}"
+  - name: 'Set the cluster network tag'
+    command:
+      cmd: "openstack network set --tag {{ cluster_id_tag }} {{ os_network }}"
   - name: 'Create a subnet'
     os_subnet:
       dns_nameservers:
