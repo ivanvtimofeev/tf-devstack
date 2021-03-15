@@ -28,50 +28,6 @@ if [[  "$(openstack port list | grep "10.113.0.1'" | wc -l)" != 0 ]]; then
 fi
 
 
-cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy_ports.yaml
-- import_playbook: common.yaml
-- hosts: all
-  gather_facts: no
-  tasks:
-  - name: 'Remove helper-server'
-    os_server:
-      name: "{{ os_helper_server_name }}"
-      state: absent
-      delete_fip: yes
-  - name: 'Remove the bootstrap server port'
-    os_port:
-      name: "{{ os_port_bootstrap }}"
-      state: absent
-  - name: 'Delete the Control Plane ports'
-    os_port:
-      name: "{{ item.1 }}-{{ item.0 }}"
-      state: absent
-    with_indexed_items: "{{ [os_port_master] * os_cp_nodes_number }}"
-  - name: 'Delete Compute ports'
-    os_port:
-      name: "{{ item.1 }}-{{ item.0 }}"
-      state: absent
-    with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
-  - name: 'Delete Helper port'
-    os_port:
-      name: "{{ os_port_helper }}"
-      state: absent
-  - name: 'Delete a subnet'
-    os_subnet:
-      name: "{{ os_subnet }}"
-      state: absent
-  - name: 'Delete a network'
-    os_subnet:
-      name: "{{ os_subnet }}"
-      state: absent
-EOF
-ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/destroy_ports.yaml
-
-
-exit 0
-
-openstack image delete bootstrap-ignition-image-$INFRA_ID || /bin/true
-
 if [[ -f ${OPENSHIFT_INSTALL_DIR}/compute-nodes.yaml ]]; then
     cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy-compute-nodes.yaml
 - import_playbook: common.yaml
@@ -125,34 +81,43 @@ EOF
     ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/destroy-control-plane.yaml
 fi
 
-if [[ -f $OPENSHIFT_INSTALL_DIR/network.yaml ]]; then
-    cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy_network.yaml
-- import_playbook: common.yaml
 
+cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy_ports.yaml
+- import_playbook: common.yaml
 - hosts: all
   gather_facts: no
-
   tasks:
-  - name: 'Delete the Ingress port'
-    os_port:
-      name: "{{ os_port_ingress }}"
+  - name: 'Remove helper-server'
+    os_server:
+      name: "{{ os_helper_server_name }}"
       state: absent
-  - name: 'Delete the API port'
+      delete_fip: yes
+  - name: 'Remove the bootstrap server port'
     os_port:
-      name: "{{ os_port_api }}"
+      name: "{{ os_port_bootstrap }}"
       state: absent
-  - name: 'Delete external router'
-    os_router:
-      name: "{{ os_router }}"
+  - name: 'Delete the Control Plane ports'
+    os_port:
+      name: "{{ item.1 }}-{{ item.0 }}"
+      state: absent
+    with_indexed_items: "{{ [os_port_master] * os_cp_nodes_number }}"
+  - name: 'Delete Compute ports'
+    os_port:
+      name: "{{ item.1 }}-{{ item.0 }}"
+      state: absent
+    with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
+  - name: 'Delete Helper port'
+    os_port:
+      name: "{{ os_port_helper }}"
       state: absent
   - name: 'Delete a subnet'
     os_subnet:
       name: "{{ os_subnet }}"
       state: absent
-  - name: 'Delete the cluster network'
-    os_network:
-      name: "{{ os_network }}"
+  - name: 'Delete a network'
+    os_subnet:
+      name: "{{ os_subnet }}"
       state: absent
 EOF
-    ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/destroy_network.yaml
-fi
+ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/destroy_ports.yaml
+
