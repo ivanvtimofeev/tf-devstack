@@ -27,15 +27,15 @@ sudo pip3 install "cryptography<3.3.2"  python-openstackclient ansible yq jinja2
 
 mkdir -p ${WORKSPACE}/tmpopenshift
 pushd ${WORKSPACE}/tmpopenshift
-if ! command -v openshift-install; then
+if ! -v $WORKSPACE/openshift-install; then
   curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OPENSHIFT_VERSION}/openshift-install-linux-${OPENSHIFT_VERSION}.tar.gz
   tar xzf openshift-install-linux-${OPENSHIFT_VERSION}.tar.gz
-  sudo mv ./openshift-install /usr/local/bin
+  mv ./openshift-install $WORKSPACE
 fi
-if ! command -v oc || ! command -v kubectl; then
+if ! -f $WORKSPACE/oc; then
   curl -LO https://mirror.openshift.com/pub/openshift-v4/clients/ocp/${OPENSHIFT_VERSION}/openshift-client-linux-${OPENSHIFT_VERSION}.tar.gz
   tar xzf openshift-client-linux-${OPENSHIFT_VERSION}.tar.gz
-  sudo mv ./oc ./kubectl /usr/local/bin
+  mv ./oc ./kubectl $WORKSPACE
 fi
 popd
 rm -rf ${WORKSPACE}/tmpopenshift
@@ -82,7 +82,7 @@ sshKey: |
   ${OPENSHIFT_PUB_KEY}
 EOF
 
-openshift-install --dir $OPENSHIFT_INSTALL_DIR create manifests
+$WORKSPACE/openshift-install --dir $OPENSHIFT_INSTALL_DIR create manifests
 
 rm -f ${OPENSHIFT_INSTALL_DIR}/openshift/99_openshift-cluster-api_master-machines-*.yaml ${OPENSHIFT_INSTALL_DIR}/openshift/99_openshift-cluster-api_worker-machineset-*.yaml
 
@@ -92,7 +92,7 @@ fi
 
 $WORKSPACE/tf-openshift/scripts/apply_install_manifests.sh $OPENSHIFT_INSTALL_DIR
 
-openshift-install --dir $OPENSHIFT_INSTALL_DIR  create ignition-configs
+$WORKSPACE/openshift-install --dir $OPENSHIFT_INSTALL_DIR  create ignition-configs
 
 export INFRA_ID=$(jq -r .infraID $OPENSHIFT_INSTALL_DIR/metadata.json)
 
