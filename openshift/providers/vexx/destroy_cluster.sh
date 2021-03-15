@@ -28,6 +28,20 @@ if [[  "$(openstack port list | grep "10.113.0.1'" | wc -l)" != 0 ]]; then
 fi
 
 
+if [[ -f ${OPENSHIFT_INSTALL_DIR}/bootstrap.yaml ]]; then
+  cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy-bootstrap.yaml
+- import_playbook: common.yaml
+- hosts: all
+  gather_facts: no
+  tasks:
+  - name: 'Delete Compute servers'
+    os_server:
+      name: "{{ os_bootstrap_server_name }}"
+      state: absent
+EOF
+    ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/destroy-bootstrap.yaml
+fi
+
 if [[ -f ${OPENSHIFT_INSTALL_DIR}/compute-nodes.yaml ]]; then
     cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy-compute-nodes.yaml
 - import_playbook: common.yaml
