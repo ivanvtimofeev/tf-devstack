@@ -16,10 +16,8 @@ OS_IMAGE_PUBLIC_SERVICE=${OS_IMAGE_PUBLIC_SERVICE:="https://image.public.sjc1.ve
 OPENSHIFT_VERSION="4.5.21"
 
 export VEXX_NETWORK=${VEXX_NETWORK:-"management"}
-export VEXX_SUBNET=${VEXX_SUBNET:-"management"}
-export VEXX_GATEWAY=${VEXX_GATEWAY:-"10.0.0.1"}
 export VEXX_ROUTER=${VEXX_ROUTER:-"router1"}
-export HELPER_IP="10.113.0.2"
+export HELPER_IP="10.113.0.20"
 
 sudo yum install -y python3 epel-release
 sudo yum install -y jq
@@ -165,7 +163,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/common.yaml
       - "10.113.0.60"
       - "10.113.0.61"
       - "10.113.0.62"
-      bootstrap_address: "10.113.0.3"
+      bootstrap_address: "10.113.0.21"
       helper_address: "${HELPER_IP}"
       os_port_helper: "{{ infraID }}-helper-port"
       os_port_bootstrap: "{{ infraID }}-bootstrap-port"
