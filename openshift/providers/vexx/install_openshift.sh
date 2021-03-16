@@ -153,7 +153,8 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/common.yaml
   - name: 'Compute resource names'
     set_fact:
       cluster_id_tag: "openshiftClusterID={{ infraID }}"
-      os_network: "{{ infraID }}-network"
+#      os_network: "{{ infraID }}-network"
+      os_network: "management"
       os_subnet: "{{ infraID }}-nodes"
       os_router: "${VEXX_ROUTER}"
       # Port names
@@ -238,12 +239,12 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
   tasks:
 
   tasks:
-  - name: 'Create the cluster network'
-    os_network:
-      name: "{{ os_network }}"
-  - name: 'Set the cluster network tag'
-    command:
-      cmd: "openstack network set --tag {{ cluster_id_tag }} {{ os_network }}"
+ # - name: 'Create the cluster network'
+ #   os_network:
+ #     name: "{{ os_network }}"
+ # - name: 'Set the cluster network tag'
+ #   command:
+ #     cmd: "openstack network set --tag {{ cluster_id_tag }} {{ os_network }}"
   - name: 'Create a subnet'
     os_subnet:
       dns_nameservers:
@@ -260,7 +261,7 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
       seconds: 5
   - name: 'Attach subnet to router'
     command:
-      cmd: "openstack router add subnet router1 ${INFRA_ID}-nodes"
+      cmd: "openstack router add subnet {{ os_router }} ${INFRA_ID}-nodes"
 EOF
 
 ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/network.yaml

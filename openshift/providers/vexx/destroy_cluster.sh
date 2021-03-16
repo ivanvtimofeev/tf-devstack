@@ -128,10 +128,10 @@ cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy_ports.yaml
     os_subnet:
       name: "{{ os_subnet }}"
       state: absent
-  - name: 'Delete a network'
-    os_network:
-      name: "{{ os_network }}"
-      state: absent
+#  - name: 'Delete a network'
+#    os_network:
+#      name: "{{ os_network }}"
+#      state: absent
 EOF
 ansible-playbook -i $OPENSHIFT_INSTALL_DIR/inventory.yaml $OPENSHIFT_INSTALL_DIR/destroy_ports.yaml
 
