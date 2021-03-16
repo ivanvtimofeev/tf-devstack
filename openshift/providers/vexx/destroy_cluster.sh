@@ -129,7 +129,7 @@ cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/destroy_ports.yaml
       name: "{{ os_subnet }}"
       state: absent
   - name: 'Delete a network'
-    os_subnet:
+    os_network:
       name: "{{ os_network }}"
       state: absent
 EOF
