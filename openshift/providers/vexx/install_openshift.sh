@@ -192,9 +192,9 @@ all:
 
       # User-provided values
       os_subnet_range: '10.113.0.0/16'
-      os_flavor_master: 'v2-standard-16'
+      os_flavor_master: 'v2-standard-8'
       os_flavor_worker: 'v2-highcpu-16'
-      os_flavor_helper: 'v2-highcpu-16'
+      os_flavor_helper: 'v2-standard-2'
       os_image_rhcos: 'rhcos'
       os_image_centos: '6b0ae7d9-6e30-440d-ab5a-93de604cb8c7'
       os_external_network: 'public'
