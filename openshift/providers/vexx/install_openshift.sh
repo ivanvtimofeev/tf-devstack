@@ -198,7 +198,7 @@ all:
       os_flavor_worker: 'v2-highcpu-16'
       os_flavor_helper: 'v2-highcpu-16'
       os_image_rhcos: 'rhcos'
-      os_image_centos: 'prepared-centos7-202012120907'
+      os_image_centos: '6b0ae7d9-6e30-440d-ab5a-93de604cb8c7'
       os_external_network: 'public'
       # OpenShift API floating IP address
       os_api_fip: '${OPENSHIFT_API_FIP}'
