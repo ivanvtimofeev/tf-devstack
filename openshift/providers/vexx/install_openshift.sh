@@ -111,8 +111,8 @@ files.append(
     'path': '/etc/hostname',
     'mode': 420,
     'contents': {
-        'source': 'data:text/plain;charset=utf-8;base64,' + hostname_b64,
-    },
+        'source': 'data:text/plain;charset=utf-8;base64,' + hostname_b64
+    }
 })
 
 ca_cert_path = os.environ.get('OS_CACERT', '')
@@ -126,8 +126,8 @@ if ca_cert_path:
         'path': '/opt/openshift/tls/cloud-ca-cert.pem',
         'mode': 420,
         'contents': {
-            'source': 'data:text/plain;charset=utf-8;base64,' + ca_cert_b64,
-        },
+            'source': 'data:text/plain;charset=utf-8;base64,' + ca_cert_b64
+        }
     })
 
 ignition['storage']['files'] = files;
@@ -446,18 +446,18 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
   "ignition": {
     "config": {
       "merge": [{
-        "source": "${bootstrap_ignition_url}",
+        "source": "${bootstrap_ignition_url}"
       }]
     },
     "security": {
       "tls": {
         "certificateAuthorities": [{
-          "source": "data:text/plain;charset=utf-8;base64,${ca_sert}",
+          "source": "data:text/plain;charset=utf-8;base64,${ca_sert}"
         }]
       }
     },
     "version": "3.1.0"
-  },
+  }
 }
 EOF
 
