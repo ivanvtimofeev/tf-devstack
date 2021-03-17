@@ -88,22 +88,22 @@ function manifest() {
 function tf() {
     # TODO: somehow move machine creation to machines
     ${my_dir}/providers/${PROVIDER}/install_openshift.sh
-    wait_cmd_success "${WORKSPACE}/oc get pods" 15 480
+    wait_cmd_success "oc get pods" 15 480
 
     echo "INFO: apply CRD-s  $(date)"
-    wait_cmd_success "${WORKSPACE}/oc apply -f ${OPERATOR_REPO}/deploy/crds/" 5 60
+    wait_cmd_success "oc apply -f ${OPERATOR_REPO}/deploy/crds/" 5 60
 
     echo "INFO: wait for CRD-s  $(date)"
-    ${WORKSPACE}/oc wait crds --for=condition=Established --timeout=2m managers.contrail.juniper.net
+    oc wait crds --for=condition=Established --timeout=2m managers.contrail.juniper.net
 
     echo "INFO: apply operator and TF templates  $(date)"
     # apply operator
-    wait_cmd_success "${WORKSPACE}/oc apply -k ${OPERATOR_REPO}/deploy/kustomize/operator/templates/" 5 60
+    wait_cmd_success "oc apply -k ${OPERATOR_REPO}/deploy/kustomize/operator/templates/" 5 60
     # apply TF cluster
-    wait_cmd_success "${WORKSPACE}/oc apply -k ${OPERATOR_REPO}/deploy/kustomize/contrail/templates/" 5 60
+    wait_cmd_success "oc apply -k ${OPERATOR_REPO}/deploy/kustomize/contrail/templates/" 5 60
 
     echo "INFO: wait for bootstrap complete  $(date)"
-    ${WORKSPACE}/openshift-install --dir=${INSTALL_DIR} wait-for bootstrap-complete
+    ./openshift-install --dir=${INSTALL_DIR} wait-for bootstrap-complete
 
     echo "INFO: destroy bootstrap  $(date)"
     ${my_dir}/providers/${PROVIDER}/destroy_bootstrap.sh
@@ -115,9 +115,9 @@ function tf() {
     agent_count=$(echo $AGENT_NODES | wc -w)
     nodes_total=$(( $controller_count + $agent_count ))
     while true; do
-        nodes_ready=$(${WORKSPACE}/oc get nodes | grep 'Ready' | wc -l)
-        for csr in $(${WORKSPACE}/oc get csr 2> /dev/null | grep -w 'Pending' | awk '{print $1}'); do
-            ${WORKSPACE}/oc adm certificate approve "$csr" 2> /dev/null || true
+        nodes_ready=$(oc get nodes | grep 'Ready' | wc -l)
+        for csr in $(oc get csr 2> /dev/null | grep -w 'Pending' | awk '{print $1}'); do
+            oc adm certificate approve "$csr" 2> /dev/null || true
             output_delay=0
         done
         [[ "$nodes_ready" -ge "$nodes_total" ]] && break
@@ -125,35 +125,18 @@ function tf() {
     done
 
     echo "INFO: wait for ingress controller  $(date)"
-    wait_cmd_success "${WORKSPACE}/oc get ingresscontroller default -n openshift-ingress-operator -o name" 15 60
+    wait_cmd_success "oc get ingresscontroller default -n openshift-ingress-operator -o name" 15 60
 
     echo "INFO: patch ingress controller  $(date)"
-    ${WORKSPACE}/oc patch ingresscontroller default -n openshift-ingress-operator \
-        --type merge \
-        --patch '{
-            "spec":{
-                "replicas": '${controller_count}',
-                    "nodePlacement":{
-                        "nodeSelector":{
-                            "matchLabels":{
-                                "node-role.kubernetes.io/master":""
-                            }
-                        },
-                    "tolerations":[{
-                        "effect": "NoSchedule",
-                        "operator": "Exists"
-                    }]
-                }
-            }
-        }'
+    wait_cmd_success "_patch_ingress_controller ${controller_count}" 3 10
 
     # TODO: move it to wait stage
-    echo "INFO: wait for install complete  $(date)"
-    ${WORKSPACE}/openshift-install --dir=${INSTALL_DIR} wait-for install-complete
+    echo "INFO: wait for install complete $(date)"
+    ./openshift-install --dir=${INSTALL_DIR} wait-for install-complete
 
-    export CONTROLLER_NODES="`${WORKSPACE}/oc get nodes -o wide | awk '/ master /{print $6}' | tr '\n' ' '`"
+    export CONTROLLER_NODES="`oc get nodes -o wide | awk '/ master /{print $6}' | tr '\n' ' '`"
     echo "INFO: controller_nodes: $CONTROLLER_NODES"
-    export AGENT_NODES="`${WORKSPACE}/oc get nodes -o wide | awk '/ worker /{print $6}' | tr '\n' ' '`"
+    export AGENT_NODES="`oc get nodes -o wide | awk '/ worker /{print $6}' | tr '\n' ' '`"
     echo "INFO: agent_nodes: $AGENT_NODES"
 }
 
