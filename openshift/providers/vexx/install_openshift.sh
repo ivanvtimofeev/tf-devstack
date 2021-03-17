@@ -13,7 +13,7 @@ export INSTALL_DIR=${INSTALL_DIR:-"${WORKSPACE}/install-${KUBERNETES_CLUSTER_NAM
 
 OPENSHIFT_INSTALL_DIR=${INSTALL_DIR}
 OS_IMAGE_PUBLIC_SERVICE=${OS_IMAGE_PUBLIC_SERVICE:="https://image.public.sjc1.vexxhost.net/"}
-OPENSHIFT_VERSION="4.5.21"
+OPENSHIFT_VERSION="4.6.20"
 
 export VEXX_NETWORK=${VEXX_NETWORK:-"management"}
 export VEXX_ROUTER=${VEXX_ROUTER:-"router1"}
@@ -195,8 +195,8 @@ all:
       os_flavor_master: 'v2-standard-8'
       os_flavor_worker: 'v2-highcpu-16'
       os_flavor_helper: 'v2-standard-2'
-      os_image_rhcos: 'rhcos'
-      os_image_centos: '6b0ae7d9-6e30-440d-ab5a-93de604cb8c7'
+      os_image_rhcos: 'rhcos-4.6.8'
+      os_image_centos: '60e3bf6d-4c38-427d-8419-9211c5dd763d'
       os_external_network: 'public'
       # OpenShift API floating IP address
       os_api_fip: '${OPENSHIFT_API_FIP}'
