@@ -103,7 +103,7 @@ function tf() {
     wait_cmd_success "${WORKSPACE}/oc apply -k ${OPERATOR_REPO}/deploy/kustomize/contrail/templates/" 5 60
 
     echo "INFO: wait for bootstrap complete  $(date)"
-    ./openshift-install --dir=${INSTALL_DIR} wait-for bootstrap-complete
+    ${WORKSPACE}/openshift-install --dir=${INSTALL_DIR} wait-for bootstrap-complete
 
     echo "INFO: destroy bootstrap  $(date)"
     ${my_dir}/providers/${PROVIDER}/destroy_bootstrap.sh
@@ -115,9 +115,9 @@ function tf() {
     agent_count=$(echo $AGENT_NODES | wc -w)
     nodes_total=$(( $controller_count + $agent_count ))
     while true; do
-        nodes_ready=$(./oc get nodes | grep 'Ready' | wc -l)
-        for csr in $(./oc get csr 2> /dev/null | grep -w 'Pending' | awk '{print $1}'); do
-            ./oc adm certificate approve "$csr" 2> /dev/null || true
+        nodes_ready=$(${WORKSPACE}/oc get nodes | grep 'Ready' | wc -l)
+        for csr in $(${WORKSPACE}/oc get csr 2> /dev/null | grep -w 'Pending' | awk '{print $1}'); do
+            ${WORKSPACE}/oc adm certificate approve "$csr" 2> /dev/null || true
             output_delay=0
         done
         [[ "$nodes_ready" -ge "$nodes_total" ]] && break
@@ -125,10 +125,10 @@ function tf() {
     done
 
     echo "INFO: wait for ingress controller  $(date)"
-    wait_cmd_success "./oc get ingresscontroller default -n openshift-ingress-operator -o name" 15 60
+    wait_cmd_success "${WORKSPACE}/oc get ingresscontroller default -n openshift-ingress-operator -o name" 15 60
 
     echo "INFO: patch ingress controller  $(date)"
-    ./oc patch ingresscontroller default -n openshift-ingress-operator \
+    ${WORKSPACE}/oc patch ingresscontroller default -n openshift-ingress-operator \
         --type merge \
         --patch '{
             "spec":{
@@ -149,11 +149,11 @@ function tf() {
 
     # TODO: move it to wait stage
     echo "INFO: wait for install complete  $(date)"
-    ./openshift-install --dir=${INSTALL_DIR} wait-for install-complete
+    ${WORKSPACE}/openshift-install --dir=${INSTALL_DIR} wait-for install-complete
 
-    export CONTROLLER_NODES="`./oc get nodes -o wide | awk '/ master /{print $6}' | tr '\n' ' '`"
+    export CONTROLLER_NODES="`${WORKSPACE}/oc get nodes -o wide | awk '/ master /{print $6}' | tr '\n' ' '`"
     echo "INFO: controller_nodes: $CONTROLLER_NODES"
-    export AGENT_NODES="`./oc get nodes -o wide | awk '/ worker /{print $6}' | tr '\n' ' '`"
+    export AGENT_NODES="`${WORKSPACE}/oc get nodes -o wide | awk '/ worker /{print $6}' | tr '\n' ' '`"
     echo "INFO: agent_nodes: $AGENT_NODES"
 }
 
