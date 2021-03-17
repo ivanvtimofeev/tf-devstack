@@ -39,6 +39,7 @@ export SSH_OPTS="-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o 
 
 # deployment related environment set by any stage and put to tf_stack_profile at the end
 declare -A DEPLOYMENT_ENV
+export PATH=$PATH:$WORKSPACE
 
 function machines() {
     echo "$DISTRO detected"
