@@ -88,7 +88,7 @@ function manifest() {
 function tf() {
     # TODO: somehow move machine creation to machines
     ${my_dir}/providers/${PROVIDER}/install_openshift.sh
-    wait_cmd_success "./oc get pods" 15 480
+    wait_cmd_success "${WORKSPACE}/oc get pods" 15 480
 
     echo "INFO: apply CRD-s  $(date)"
     wait_cmd_success "./oc apply -f ${OPERATOR_REPO}/deploy/crds/" 5 60
