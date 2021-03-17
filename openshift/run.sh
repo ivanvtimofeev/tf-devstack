@@ -91,16 +91,16 @@ function tf() {
     wait_cmd_success "${WORKSPACE}/oc get pods" 15 480
 
     echo "INFO: apply CRD-s  $(date)"
-    wait_cmd_success "./oc apply -f ${OPERATOR_REPO}/deploy/crds/" 5 60
+    wait_cmd_success "${WORKSPACE}/oc apply -f ${OPERATOR_REPO}/deploy/crds/" 5 60
 
     echo "INFO: wait for CRD-s  $(date)"
     ./oc wait crds --for=condition=Established --timeout=2m managers.contrail.juniper.net
 
     echo "INFO: apply operator and TF templates  $(date)"
     # apply operator
-    wait_cmd_success "./oc apply -k ${OPERATOR_REPO}/deploy/kustomize/operator/templates/" 5 60
+    wait_cmd_success "${WORKSPACE}/oc apply -k ${OPERATOR_REPO}/deploy/kustomize/operator/templates/" 5 60
     # apply TF cluster
-    wait_cmd_success "./oc apply -k ${OPERATOR_REPO}/deploy/kustomize/contrail/templates/" 5 60
+    wait_cmd_success "${WORKSPACE}/oc apply -k ${OPERATOR_REPO}/deploy/kustomize/contrail/templates/" 5 60
 
     echo "INFO: wait for bootstrap complete  $(date)"
     ./openshift-install --dir=${INSTALL_DIR} wait-for bootstrap-complete
