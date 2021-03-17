@@ -112,9 +112,7 @@ files.append(
     'mode': 420,
     'contents': {
         'source': 'data:text/plain;charset=utf-8;base64,' + hostname_b64,
-        'verification': {}
     },
-    'filesystem': 'root',
 })
 
 ca_cert_path = os.environ.get('OS_CACERT', '')
@@ -129,9 +127,7 @@ if ca_cert_path:
         'mode': 420,
         'contents': {
             'source': 'data:text/plain;charset=utf-8;base64,' + ca_cert_b64,
-            'verification': {}
         },
-        'filesystem': 'root',
     })
 
 ignition['storage']['files'] = files;
@@ -449,26 +445,19 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/$INFRA_ID-bootstrap-ignition.json
 {
   "ignition": {
     "config": {
-      "append": [{
+      "merge": [{
         "source": "${bootstrap_ignition_url}",
-        "verification": {}
       }]
     },
     "security": {
       "tls": {
         "certificateAuthorities": [{
           "source": "data:text/plain;charset=utf-8;base64,${ca_sert}",
-          "verification": {}
         }]
       }
     },
-    "timeouts": {},
-    "version": "2.4.0"
+    "version": "3.1.0"
   },
-  "networkd": {},
-  "passwd": {},
-  "storage": {},
-  "systemd": {}
 }
 EOF
 
@@ -505,9 +494,10 @@ for index in $(seq 0 2); do
     MASTER_HOSTNAME="$INFRA_ID-master-$index\n"
     python3 -c "import base64, json, sys;
 ignition = json.load(sys.stdin);
-files = ignition['storage'].get('files', []);
+storage = ignition.get('storage', {});
 files.append({'path': '/etc/hostname', 'mode': 420, 'contents': {'source': 'data:text/plain;charset=utf-8;base64,' + base64.standard_b64encode(b'$MASTER_HOSTNAME').decode().strip(), 'verification': {}}, 'filesystem': 'root'});
-ignition['storage']['files'] = files;
+storage['files'] = files;
+ignition['storage'] = storage
 json.dump(ignition, sys.stdout)" <$OPENSHIFT_INSTALL_DIR/master.ign > "$OPENSHIFT_INSTALL_DIR/$INFRA_ID-master-$index-ignition.json"
 done
 
