@@ -94,7 +94,7 @@ function tf() {
     wait_cmd_success "${WORKSPACE}/oc apply -f ${OPERATOR_REPO}/deploy/crds/" 5 60
 
     echo "INFO: wait for CRD-s  $(date)"
-    ./oc wait crds --for=condition=Established --timeout=2m managers.contrail.juniper.net
+    ${WORKSPACE}/oc wait crds --for=condition=Established --timeout=2m managers.contrail.juniper.net
 
     echo "INFO: apply operator and TF templates  $(date)"
     # apply operator
