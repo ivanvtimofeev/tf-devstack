@@ -17,7 +17,7 @@ OPENSHIFT_VERSION="4.6.20"
 
 export VEXX_NETWORK=${VEXX_NETWORK:-"management"}
 export VEXX_ROUTER=${VEXX_ROUTER:-"router1"}
-export HELPER_IP="8.8.8.8"
+export HELPER_IP="10.113.0.20"
 
 sudo yum install -y python3 epel-release
 sudo yum install -y jq
@@ -159,7 +159,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/common.yaml
       - "10.113.0.60"
       - "10.113.0.61"
       - "10.113.0.62"
-      bootstrap_address: "8.8.8.81"
+      bootstrap_address: "10.113.0.21"
       helper_address: "${HELPER_IP}"
       os_port_helper: "{{ infraID }}-helper-port"
       os_port_bootstrap: "{{ infraID }}-bootstrap-port"
