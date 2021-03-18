@@ -17,7 +17,7 @@ OPENSHIFT_VERSION="4.6.20"
 
 export VEXX_NETWORK=${VEXX_NETWORK:-"management"}
 export VEXX_ROUTER=${VEXX_ROUTER:-"router1"}
-export HELPER_IP="10.113.0.20"
+export HELPER_IP="8.8.8.80"
 
 sudo yum install -y python3 epel-release
 sudo yum install -y jq
@@ -159,7 +159,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/common.yaml
       - "10.113.0.60"
       - "10.113.0.61"
       - "10.113.0.62"
-      bootstrap_address: "10.113.0.21"
+      bootstrap_address: "8.8.8.81"
       helper_address: "${HELPER_IP}"
       os_port_helper: "{{ infraID }}-helper-port"
       os_port_bootstrap: "{{ infraID }}-bootstrap-port"
@@ -242,7 +242,7 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
     os_subnet:
       dns_nameservers:
        - "{{ helper_address }}"
-       - 10.113.0.2
+       - 8.8.8.8
       name: "{{ os_subnet }}"
       network_name: "{{ os_network }}"
       cidr: "{{ os_subnet_range }}"
@@ -413,7 +413,7 @@ helper:
 dns:
   domain: "${KUBERNETES_CLUSTER_DOMAIN}"
   clusterid: "${KUBERNETES_CLUSTER_NAME}"
-  forwarder1: "10.113.0.2"
+  forwarder1: "8.8.8.8"
 bootstrap:
   name: "bootstrap"
   ipaddr: "${bootstrap_ip}"
