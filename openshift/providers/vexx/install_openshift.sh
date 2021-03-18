@@ -17,7 +17,7 @@ OPENSHIFT_VERSION="4.6.20"
 
 export VEXX_NETWORK=${VEXX_NETWORK:-"management"}
 export VEXX_ROUTER=${VEXX_ROUTER:-"router1"}
-export HELPER_IP="8.8.8.80"
+export HELPER_IP="8.8.8.8"
 
 sudo yum install -y python3 epel-release
 sudo yum install -y jq
