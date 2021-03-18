@@ -242,7 +242,7 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
     os_subnet:
       dns_nameservers:
        - "{{ helper_address }}"
-       - 10.0.0.2
+       - 10.113.0.2
       name: "{{ os_subnet }}"
       network_name: "{{ os_network }}"
       cidr: "{{ os_subnet_range }}"
@@ -413,7 +413,7 @@ helper:
 dns:
   domain: "${KUBERNETES_CLUSTER_DOMAIN}"
   clusterid: "${KUBERNETES_CLUSTER_NAME}"
-  forwarder1: "10.0.0.2"
+  forwarder1: "10.113.0.2"
 bootstrap:
   name: "bootstrap"
   ipaddr: "${bootstrap_ip}"

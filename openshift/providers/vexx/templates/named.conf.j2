@@ -30,7 +30,7 @@ options {
 
 	/* Fowarders */
 	forward only;
-	forwarders { {{ dns.forwarder1 | default("10.0.0.2") }}; {{ dns.forwarder2 | default("10.0.0.2") }}; };
+	forwarders { {{ dns.forwarder1 | default("10.113.0.2") }}; {{ dns.forwarder2 | default("10.113.0.2") }}; };
 
 	dnssec-enable yes;
 	dnssec-validation no;
