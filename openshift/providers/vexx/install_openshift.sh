@@ -556,6 +556,8 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/servers.yaml
       userdata: "{{ lookup('file', [item.1, item.0, 'ignition.json'] | join('-')) | string }}"
       nics:
       - port-name: "{{ os_port_master }}-{{ item.0 }}"
+      meta:
+        hostname: "master{{ item.0 }}.${KUBERNETES_CLUSTER_NAME}.${KUBERNETES_CLUSTER_DOMAIN}"
       scheduler_hints:
         group: "{{ server_group_id }}"
     with_indexed_items: "{{ [os_cp_server_name] * os_cp_nodes_number }}"
