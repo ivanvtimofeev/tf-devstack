@@ -215,7 +215,7 @@ all:
 
       # Number of provisioned Compute nodes.
       # 3 is the minimum number for a fully-functional cluster.
-      os_compute_nodes_number: 2
+      os_compute_nodes_number: 3
 EOF
 
 
