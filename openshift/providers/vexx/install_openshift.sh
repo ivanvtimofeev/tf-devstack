@@ -10,6 +10,7 @@ echo "Workspace is $WORKSPACE"
 export KUBERNETES_CLUSTER_NAME=${KUBERNETES_CLUSTER_NAME:-"test1"}
 export KUBERNETES_CLUSTER_DOMAIN=${KUBERNETES_CLUSTER_DOMAIN:-"example.com"}
 export INSTALL_DIR=${INSTALL_DIR:-"${WORKSPACE}/install-${KUBERNETES_CLUSTER_NAME}"}
+export OS_IMAGE_CENTOS=${OS_IMAGE_CENTOS:-"dbfb0f51-02c3-4e15-b1dc-da2f8045905e"}
 
 OPENSHIFT_INSTALL_DIR=${INSTALL_DIR}
 OS_IMAGE_PUBLIC_SERVICE=${OS_IMAGE_PUBLIC_SERVICE:="https://image.public.sjc1.vexxhost.net/"}
@@ -192,7 +193,7 @@ all:
       os_flavor_worker: 'v2-highcpu-16'
       os_flavor_helper: 'v2-standard-2'
       os_image_rhcos: 'rhcos-4.6.8'
-      os_image_centos: '60e3bf6d-4c38-427d-8419-9211c5dd763d'
+      os_image_centos: '${OS_IMAGE_CENTOS}'
       os_external_network: 'public'
       # OpenShift API floating IP address
       os_api_fip: '${OPENSHIFT_API_FIP}'
