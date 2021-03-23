@@ -6,12 +6,6 @@
   remote_user: root
 
   tasks:
-  - name: Install needed packages
-    package:
-      name:
-        - "bind"
-        - "bind-utils"
-      state: present
   - name: Remove existing named config
     file:
       path: /etc/named.conf

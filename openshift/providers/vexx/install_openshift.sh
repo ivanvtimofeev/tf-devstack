@@ -10,7 +10,7 @@ echo "Workspace is $WORKSPACE"
 export KUBERNETES_CLUSTER_NAME=${KUBERNETES_CLUSTER_NAME:-"test1"}
 export KUBERNETES_CLUSTER_DOMAIN=${KUBERNETES_CLUSTER_DOMAIN:-"example.com"}
 export INSTALL_DIR=${INSTALL_DIR:-"${WORKSPACE}/install-${KUBERNETES_CLUSTER_NAME}"}
-export OS_IMAGE_CENTOS=${OS_IMAGE_CENTOS:-"dbfb0f51-02c3-4e15-b1dc-da2f8045905e"}
+export OS_IMAGE_CENTOS=${OS_IMAGE_CENTOS:-"prepared-centos7-202103231051"}
 
 OPENSHIFT_INSTALL_DIR=${INSTALL_DIR}
 OS_IMAGE_PUBLIC_SERVICE=${OS_IMAGE_PUBLIC_SERVICE:="https://image.public.sjc1.vexxhost.net/"}
@@ -246,7 +246,6 @@ cat <<EOF >$OPENSHIFT_INSTALL_DIR/network.yaml
     os_subnet:
       dns_nameservers:
        - "{{ helper_address }}"
-       - 8.8.8.8
       name: "{{ os_subnet }}"
       network_name: "{{ os_network }}"
       cidr: "{{ os_subnet_range }}"

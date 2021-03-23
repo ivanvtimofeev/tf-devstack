@@ -5,11 +5,6 @@
   - import_tasks: ../handlers/main.yaml
   remote_user: root
   tasks:
-  - name: Install needed packages
-    package:
-      name:
-        - "haproxy"
-      state: present
   - name: Remove existing haproxy config
     file:
       path: /etc/haproxy/haproxy.cfg
