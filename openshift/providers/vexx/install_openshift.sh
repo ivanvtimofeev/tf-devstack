@@ -494,7 +494,7 @@ EOF
 ansible-playbook -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/bootstrap.yaml
 
 for index in $(seq 0 2); do
-    MASTER_HOSTNAME="master${index}.${KUBERNETES_CLUSTER_NAME}.${KUBERNATES_CLUSTER_DOMAIN}"
+    MASTER_HOSTNAME="master${index}.${KUBERNETES_CLUSTER_NAME}.${KUBERNETES_CLUSTER_DOMAIN}"
     python3 -c "import base64, json, sys;
 ignition = json.load(sys.stdin);
 storage = ignition.get('storage', {});
