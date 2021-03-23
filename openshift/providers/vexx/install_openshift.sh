@@ -91,6 +91,9 @@ fi
 
 $WORKSPACE/tf-openshift/scripts/apply_install_manifests.sh $OPENSHIFT_INSTALL_DIR
 
+rm -rf ${OPENSHIFT_INSTALL_DIR}-manifests
+cp -r ${OPENSHIFT_INSTALL_DIR} ${OPENSHIFT_INSTALL_DIR}-manifests
+
 $WORKSPACE/openshift-install --dir $OPENSHIFT_INSTALL_DIR  create ignition-configs
 
 export INFRA_ID=$(jq -r .infraID $OPENSHIFT_INSTALL_DIR/metadata.json)
@@ -491,7 +494,7 @@ EOF
 ansible-playbook -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/bootstrap.yaml
 
 for index in $(seq 0 2); do
-    MASTER_HOSTNAME="$INFRA_ID-master-$index\n"
+    MASTER_HOSTNAME="master${index}.${KUBERNETES_CLUSTER_NAME}.${KUBERNATES_CLUSTER_DOMAIN}"
     python3 -c "import base64, json, sys;
 ignition = json.load(sys.stdin);
 storage = ignition.get('storage', {});
