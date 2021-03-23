@@ -386,7 +386,7 @@ cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/helper.yaml
 
 EOF
 
-ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/helper.yaml
+ansible-playbook -vvv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/helper.yaml
 
 # Setup helper node
 addrs=$(openstack port list -c name -c fixed_ips -f json --tags openshiftClusterID=${INFRA_ID})
