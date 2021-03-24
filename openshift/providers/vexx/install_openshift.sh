@@ -371,7 +371,7 @@ cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/helper.yaml
       name: "{{ os_helper_server_name }}"
       image: "{{ os_image_centos }}"
       flavor: "{{ os_flavor_helper }}"
-      volume_size: 25
+      volume_size: 123
       boot_from_volume: True
       auto_ip: no
       key_name: "plab"
@@ -482,7 +482,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/bootstrap.yaml
       name: "{{ os_bootstrap_server_name }}"
       image: "{{ os_image_rhcos }}"
       flavor: "{{ os_flavor_master }}"
-      volume_size: 25
+      volume_size: 123
       boot_from_volume: True
       userdata: "{{ lookup('file', os_bootstrap_ignition) | string }}"
       auto_ip: no
@@ -549,7 +549,7 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/servers.yaml
       name: "{{ item.1 }}-{{ item.0 }}"
       image: "{{ os_image_rhcos }}"
       flavor: "{{ os_flavor_master }}"
-      volume_size: 25
+      volume_size: 123
       boot_from_volume: True
       auto_ip: no
       # The ignition filename will be concatenated with the Control Plane node
@@ -578,7 +578,7 @@ cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/compute-nodes.yaml
       name: "{{ item.1 }}-{{ item.0 }}"
       image: "{{ os_image_rhcos }}"
       flavor: "{{ os_flavor_worker }}"
-      volume_size: 25
+      volume_size: 123
       boot_from_volume: True
       auto_ip: no
       userdata: "{{ lookup('file', 'worker.ign') | string }}"
