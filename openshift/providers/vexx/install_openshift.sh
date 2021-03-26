@@ -61,7 +61,7 @@ controlPlane:
   architecture: amd64
   hyperthreading: Enabled
   name: master
-  replicas: 3
+  replicas: 1
 metadata:
   creationTimestamp: null
   name: ${KUBERNETES_CLUSTER_NAME}
@@ -157,8 +157,6 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/common.yaml
       # Port names
       master_addresses:
       - "10.113.0.50"
-      - "10.113.0.51"
-      - "10.113.0.52"
       worker_addresses:
       - "10.113.0.60"
       - "10.113.0.61"
@@ -332,27 +330,6 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/ports.yaml
       cmd: "openstack port set --no-security-group --disable-port-security {{ item.1 }}-{{ item.0 }}"
     with_indexed_items: "{{ [os_port_master] * os_cp_nodes_number }}"
 
-  - name: 'Create the Compute ports'
-    os_port:
-      name: "{{ item.1 }}-{{ item.0 }}"
-      network: "{{ os_network }}"
-      fixed_ips:
-      - ip_address: "{{ worker_addresses[item.0] }}"
-      security_groups:
-      - "{{ os_sg_worker }}"
-    with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
-    register: ports
-
-  - name: 'Set compute ports tag'
-    command:
-      cmd: "openstack port set --tag {{ cluster_id_tag }} {{ item.1 }}-{{ item.0 }}"
-    with_indexed_items: "{{ [os_port_worker] * os_compute_nodes_number }}"
-
-  - name: 'Disable compute port security'
-    command:
-      cmd: "openstack port set --no-security-group --disable-port-security {{ item.1 }}-{{ item.0 }}"
-    with_indexed_items: "{{ [os_port_master] * os_compute_nodes_number}}"
-
 EOF
 
 ansible-playbook -vv -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/ports.yaml
@@ -422,16 +399,10 @@ bootstrap:
   ipaddr: "${bootstrap_ip}"
 masters:
   - name: "master0"
-    ipaddr: "${master_ips[0]}"
-  - name: "master1"
-    ipaddr: "${master_ips[1]}"
-  - name: "master2"
-    ipaddr: "${master_ips[2]}"
+    ipaddr: "10.113.0.50"
 workers:
   - name: "worker0"
-    ipaddr: "${worker_ips[0]}"
-  - name: "worker1"
-    ipaddr: "${worker_ips[1]}"
+    ipaddr: "10.113.0.50"
 EOF
 
 pushd ${my_dir}
@@ -492,7 +463,7 @@ EOF
 
 ansible-playbook -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/bootstrap.yaml
 
-for index in $(seq 0 2); do
+for index in "0"; do
     MASTER_HOSTNAME="master${index}.${KUBERNETES_CLUSTER_NAME}.${KUBERNETES_CLUSTER_DOMAIN}"
     python3 -c "import base64, json, sys;
 ignition = json.load(sys.stdin);
@@ -565,6 +536,8 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/servers.yaml
         group: "{{ server_group_id }}"
     with_indexed_items: "{{ [os_cp_server_name] * os_cp_nodes_number }}"
 EOF
+
+exit 0
 
 ansible-playbook -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/servers.yaml
 
