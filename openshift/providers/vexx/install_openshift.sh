@@ -533,27 +533,4 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/servers.yaml
     with_indexed_items: "{{ [os_cp_server_name] * os_cp_nodes_number }}"
 EOF
 
-exit 0
-
 ansible-playbook -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/servers.yaml
-
-cat <<EOF > ${OPENSHIFT_INSTALL_DIR}/compute-nodes.yaml
-- import_playbook: common.yaml
-- hosts: all
-  gather_facts: no
-  tasks:
-  - name: 'Create the Compute servers'
-    os_server:
-      name: "{{ item.1 }}-{{ item.0 }}"
-      image: "{{ os_image_rhcos }}"
-      flavor: "{{ os_flavor_worker }}"
-      volume_size: 123
-      boot_from_volume: True
-      auto_ip: no
-      userdata: "{{ lookup('file', 'worker.ign') | string }}"
-      nics:
-      - port-name: "{{ os_port_worker }}-{{ item.0 }}"
-    with_indexed_items: "{{ [os_compute_server_name] * os_compute_nodes_number }}"
-EOF
-
-ansible-playbook -i ${OPENSHIFT_INSTALL_DIR}/inventory.yaml ${OPENSHIFT_INSTALL_DIR}/compute-nodes.yaml
