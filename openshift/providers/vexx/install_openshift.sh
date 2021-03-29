@@ -157,10 +157,6 @@ cat <<EOF > $OPENSHIFT_INSTALL_DIR/common.yaml
       # Port names
       master_addresses:
       - "10.113.0.50"
-      worker_addresses:
-      - "10.113.0.60"
-      - "10.113.0.61"
-      - "10.113.0.62"
       bootstrap_address: "10.113.0.21"
       helper_address: "${HELPER_IP}"
       os_port_helper: "{{ infraID }}-helper-port"
@@ -212,11 +208,11 @@ all:
 
       # Number of provisioned Control Plane nodes
       # 3 is the minimum number for a fully-functional cluster.
-      os_cp_nodes_number: 3
+      os_cp_nodes_number: 1
 
       # Number of provisioned Compute nodes.
       # 3 is the minimum number for a fully-functional cluster.
-      os_compute_nodes_number: 3
+      os_compute_nodes_number: 0
 EOF
 
 
